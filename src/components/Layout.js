@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Header from "./Header";
 
-export default function Layout({ children, onAddNew, onLogout }) {
+export default function Layout({ children, onAddNew, onLogout, onImportCSV }) {
 	const { session, loading: sessionLoading } = useSession();
 	const router = useRouter();
 
@@ -21,7 +21,11 @@ export default function Layout({ children, onAddNew, onLogout }) {
 
 	return (
 		<div className="min-h-screen bg-gray-50">
-			<Header onLogout={onLogout} onAddNew={onAddNew} />
+			<Header
+				onLogout={onLogout}
+				onAddNew={onAddNew}
+				onImportCSV={onImportCSV}
+			/>
 			<main className="pt-20 pb-8">{children}</main>
 		</div>
 	);

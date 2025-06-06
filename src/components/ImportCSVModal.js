@@ -30,52 +30,15 @@ function parseUnixTimestamp(timestamp) {
 	}
 }
 
-export default function NewSave() {
-	const [url, setUrl] = useState("");
-	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState(null);
+export default function ImportCSVModal({ isOpen, onClose, onImportComplete }) {
 	const [csvFile, setCsvFile] = useState(null);
 	const [importing, setImporting] = useState(false);
+	const [error, setError] = useState(null);
 	const [importProgress, setImportProgress] = useState({
 		current: 0,
 		total: 0,
 	});
 	const router = useRouter();
-
-	const handleSave = async (e) => {
-		e.preventDefault();
-		setLoading(true);
-		setError(null);
-
-		try {
-			const {
-				data: { session },
-			} = await supabase.auth.getSession();
-			if (!session) {
-				router.push("/login");
-				return;
-			}
-
-			const metadata = await fetchMetadata(url);
-
-			const { error: saveError } = await supabase.from("saves").insert({
-				user_id: session.user.id,
-				url,
-				...metadata,
-				tags: [],
-				time_added: Math.floor(Date.now() / 1000),
-			});
-
-			if (saveError) throw saveError;
-
-			router.push("/");
-		} catch (error) {
-			console.error("Error saving:", error);
-			setError(error.message);
-		} finally {
-			setLoading(false);
-		}
-	};
 
 	const handleCsvImport = async (e) => {
 		e.preventDefault();
@@ -147,9 +110,7 @@ export default function NewSave() {
 								time_added: row.time_added
 									? parseUnixTimestamp(row.time_added)
 									: Math.floor(Date.now() / 1000),
-								tags: row.tags
-									? row.tags.split(",").map((tag) => tag.trim())
-									: [],
+								tags: tags,
 								status: row.status || "unread",
 								created_at: new Date().toISOString(),
 								domain: extractDomain(row.url),
@@ -186,7 +147,8 @@ export default function NewSave() {
 						}
 
 						console.log("Successfully saved items to database");
-						router.push("/");
+						onImportComplete?.();
+						onClose();
 					} else {
 						console.log("No valid items to save");
 						setError(
@@ -215,50 +177,40 @@ export default function NewSave() {
 		}
 	};
 
+	if (!isOpen) return null;
+
 	return (
-		<div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-			<h1 className="text-3xl font-bold text-gray-900 mb-8">Save New Item</h1>
-
-			{error && (
-				<div className="rounded-md bg-red-50 p-4 mb-6">
-					<div className="text-sm text-red-700">{error}</div>
-				</div>
-			)}
-
-			<div className="bg-white shadow rounded-lg p-6 mb-8">
-				<h2 className="text-lg font-medium text-gray-900 mb-4">Save URL</h2>
-				<form onSubmit={handleSave}>
-					<div className="mb-4">
-						<label
-							htmlFor="url"
-							className="block text-sm font-medium text-gray-700"
-						>
-							URL
-						</label>
-						<input
-							type="url"
-							id="url"
-							value={url}
-							onChange={(e) => setUrl(e.target.value)}
-							required
-							className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-							placeholder="https://example.com"
-						/>
-					</div>
+		<div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+			<div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4">
+				<div className="flex justify-between items-center mb-4">
+					<h2 className="text-lg font-medium text-gray-900">Import from CSV</h2>
 					<button
-						type="submit"
-						disabled={loading}
-						className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+						onClick={onClose}
+						className="text-gray-400 hover:text-gray-500"
 					>
-						{loading ? "Saving..." : "Save URL"}
+						<span className="sr-only">Close</span>
+						<svg
+							className="h-6 w-6"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+						>
+							<path
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								strokeWidth={2}
+								d="M6 18L18 6M6 6l12 12"
+							/>
+						</svg>
 					</button>
-				</form>
-			</div>
+				</div>
 
-			<div className="bg-white shadow rounded-lg p-6">
-				<h2 className="text-lg font-medium text-gray-900 mb-4">
-					Import from CSV
-				</h2>
+				{error && (
+					<div className="rounded-md bg-red-50 p-4 mb-4">
+						<div className="text-sm text-red-700">{error}</div>
+					</div>
+				)}
+
 				<form onSubmit={handleCsvImport}>
 					<div className="mb-4">
 						<label
@@ -299,13 +251,22 @@ export default function NewSave() {
 							</div>
 						</div>
 					)}
-					<button
-						type="submit"
-						disabled={importing}
-						className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-					>
-						{importing ? "Importing..." : "Import CSV"}
-					</button>
+					<div className="flex justify-end gap-4">
+						<button
+							type="button"
+							onClick={onClose}
+							className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+						>
+							Cancel
+						</button>
+						<button
+							type="submit"
+							disabled={importing}
+							className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+						>
+							{importing ? "Importing..." : "Import CSV"}
+						</button>
+					</div>
 				</form>
 			</div>
 		</div>

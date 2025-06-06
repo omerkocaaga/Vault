@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-export default function Header({ onLogout, onAddNew }) {
+export default function Header({ onLogout, onAddNew, onImportCSV }) {
 	const router = useRouter();
 
 	return (
@@ -21,6 +21,12 @@ export default function Header({ onLogout, onAddNew }) {
 						>
 							View Archive
 						</Link>
+						<button
+							onClick={onImportCSV}
+							className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+						>
+							Import CSV
+						</button>
 						<button
 							onClick={onAddNew}
 							className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"

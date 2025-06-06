@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Layout from "@/components/Layout";
 import NewBookmarkModal from "@/components/NewBookmarkModal";
+import ImportCSVModal from "@/components/ImportCSVModal";
 import SaveList from "@/components/SaveList";
 
 export default function Home() {
@@ -15,6 +16,7 @@ export default function Home() {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState(null);
 	const [newBookmarkModalOpen, setNewBookmarkModalOpen] = useState(false);
+	const [importCSVModalOpen, setImportCSVModalOpen] = useState(false);
 	const [page, setPage] = useState(0);
 	const [hasMore, setHasMore] = useState(true);
 	const ITEMS_PER_PAGE = 10;
@@ -202,10 +204,16 @@ export default function Home() {
 		}
 	};
 
+	const handleImportComplete = () => {
+		// Refresh the saves list after import
+		fetchSaves(0, false);
+	};
+
 	return (
 		<Layout
 			onAddNew={() => setNewBookmarkModalOpen(true)}
 			onLogout={handleLogout}
+			onImportCSV={() => setImportCSVModalOpen(true)}
 		>
 			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 				<div className="space-y-6">
@@ -229,6 +237,12 @@ export default function Home() {
 						onClose={() => setNewBookmarkModalOpen(false)}
 						onSave={handleNewBookmark}
 						loading={loading}
+					/>
+
+					<ImportCSVModal
+						isOpen={importCSVModalOpen}
+						onClose={() => setImportCSVModalOpen(false)}
+						onImportComplete={handleImportComplete}
 					/>
 				</div>
 			</div>
