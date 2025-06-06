@@ -44,28 +44,61 @@ export async function POST(request) {
 		const html = await response.text();
 		console.log("HTML content length:", html.length);
 
-		// Simple regex-based metadata extraction
+		// Enhanced regex patterns for metadata extraction
 		const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
 		const descriptionMatch = html.match(
-			/<meta[^>]*name="description"[^>]*content="([^"]*)"[^>]*>/i
+			/<meta[^>]*(?:name|property)="(?:description|og:description)"[^>]*content="([^"]*)"[^>]*>/i
 		);
-		const ogImageMatch = html.match(
-			/<meta[^>]*property="og:image"[^>]*content="([^"]*)"[^>]*>/i
-		);
-		const faviconMatch = html.match(
-			/<link[^>]*rel="(?:shortcut )?icon"[^>]*href="([^"]*)"[^>]*>/i
-		);
+
+		// Try multiple patterns for og:image
+		const ogImagePatterns = [
+			/<meta[^>]*property="og:image"[^>]*content="([^"]*)"[^>]*>/i,
+			/<meta[^>]*name="og:image"[^>]*content="([^"]*)"[^>]*>/i,
+			/<meta[^>]*property="og:image:secure_url"[^>]*content="([^"]*)"[^>]*>/i,
+			/<meta[^>]*property="twitter:image"[^>]*content="([^"]*)"[^>]*>/i,
+		];
+
+		// Try multiple patterns for favicon
+		const faviconPatterns = [
+			/<link[^>]*rel="(?:shortcut )?icon"[^>]*href="([^"]*)"[^>]*>/i,
+			/<link[^>]*rel="apple-touch-icon"[^>]*href="([^"]*)"[^>]*>/i,
+			/<link[^>]*rel="icon"[^>]*href="([^"]*)"[^>]*>/i,
+		];
+
 		const domain = new URL(url).hostname;
 
+		// Extract metadata using the first matching pattern
 		const title = titleMatch ? titleMatch[1].trim() : "";
 		const description = descriptionMatch ? descriptionMatch[1].trim() : "";
-		const ogImage = ogImageMatch ? ogImageMatch[1].trim() : "";
-		const favicon = faviconMatch ? faviconMatch[1].trim() : "";
+
+		// Find the first matching og:image
+		let ogImage = "";
+		for (const pattern of ogImagePatterns) {
+			const match = html.match(pattern);
+			if (match) {
+				ogImage = match[1].trim();
+				break;
+			}
+		}
+
+		// Find the first matching favicon
+		let favicon = "";
+		for (const pattern of faviconPatterns) {
+			const match = html.match(pattern);
+			if (match) {
+				favicon = match[1].trim();
+				break;
+			}
+		}
 
 		// Handle relative URLs for favicon and og:image
 		const resolveUrl = (baseUrl, relativeUrl) => {
 			if (!relativeUrl) return "";
 			try {
+				// Handle protocol-relative URLs
+				if (relativeUrl.startsWith("//")) {
+					relativeUrl = "https:" + relativeUrl;
+				}
 				return new URL(relativeUrl, baseUrl).toString();
 			} catch (e) {
 				console.error("Error resolving URL:", e);

@@ -2,13 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { supabase, deleteSave } from "@/lib/supabase";
 import Link from "next/link";
 import { useSession } from "@/components/SessionProvider";
+import DeleteConfirmationModal from "@/components/DeleteConfirmationModal";
 
 export default function Home() {
 	const [saves, setSaves] = useState([]);
 	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState(null);
+	const [deletingId, setDeletingId] = useState(null);
+	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+	const [itemToDelete, setItemToDelete] = useState(null);
 	const router = useRouter();
 	const { session } = useSession();
 
@@ -69,6 +74,33 @@ export default function Home() {
 		}
 	};
 
+	const handleDeleteClick = (save) => {
+		setItemToDelete(save);
+		setDeleteModalOpen(true);
+	};
+
+	const handleDeleteConfirm = async () => {
+		if (!itemToDelete) return;
+
+		try {
+			setDeletingId(itemToDelete.id);
+			await deleteSave(itemToDelete.id);
+			setSaves(saves.filter((save) => save.id !== itemToDelete.id));
+			setDeleteModalOpen(false);
+		} catch (error) {
+			console.error("Error deleting save:", error);
+			setError("Failed to delete item");
+		} finally {
+			setDeletingId(null);
+			setItemToDelete(null);
+		}
+	};
+
+	const handleDeleteCancel = () => {
+		setDeleteModalOpen(false);
+		setItemToDelete(null);
+	};
+
 	if (loading) {
 		return (
 			<div className="min-h-screen bg-gray-100">
@@ -100,6 +132,12 @@ export default function Home() {
 					</div>
 				</div>
 
+				{error && (
+					<div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+						{error}
+					</div>
+				)}
+
 				<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
 					{saves.map((save) => (
 						<div
@@ -116,17 +154,31 @@ export default function Home() {
 								</div>
 							)}
 							<div className="p-6">
-								<div className="flex items-center">
-									{save.favicon_url && (
-										<img
-											src={save.favicon_url}
-											alt=""
-											className="h-6 w-6 mr-2"
-										/>
-									)}
-									<h3 className="text-lg font-medium text-gray-900 truncate">
-										{save.title || save.url}
-									</h3>
+								<div className="flex items-center justify-between">
+									<div className="flex items-center">
+										{save.favicon_url && (
+											<img
+												src={save.favicon_url}
+												alt=""
+												className="h-6 w-6 mr-2"
+											/>
+										)}
+										<h3 className="text-lg font-medium text-gray-900 truncate">
+											{save.title || save.url}
+										</h3>
+									</div>
+									<button
+										onClick={() => handleDeleteClick(save)}
+										disabled={deletingId === save.id}
+										className="text-red-500 hover:text-red-700 disabled:opacity-50"
+										title="Delete item"
+									>
+										{deletingId === save.id ? (
+											<span className="animate-spin">⌛</span>
+										) : (
+											"🗑️"
+										)}
+									</button>
 								</div>
 								<p className="mt-2 text-sm text-gray-500 line-clamp-2">
 									{save.description}
@@ -158,6 +210,13 @@ export default function Home() {
 					))}
 				</div>
 			</div>
+			<DeleteConfirmationModal
+				isOpen={deleteModalOpen}
+				onClose={handleDeleteCancel}
+				onConfirm={handleDeleteConfirm}
+				itemTitle={itemToDelete?.title || itemToDelete?.url}
+				isDeleting={deletingId === itemToDelete?.id}
+			/>
 		</div>
 	);
 }

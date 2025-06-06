@@ -1,34 +1,30 @@
 # Vault - Bookmark Manager
 
-A full-stack web application for saving and organizing bookmarks, built with Next.js, Tailwind CSS, and Supabase.
+A modern bookmark manager built with Next.js and Supabase, allowing you to save, organize, and manage your bookmarks with metadata extraction.
 
 ## Features
 
-- Email/password authentication
-- Save URLs with automatic metadata fetching
-- Import bookmarks from Pocket CSV exports
-- Archive and delete saved items
-- Infinite scroll pagination
+- Save URLs with automatic metadata extraction (title, description, images)
+- Import bookmarks from CSV files
+- Tag-based organization
 - Responsive design
+- Secure authentication
+- Real-time updates
 
 ## Tech Stack
 
-- Next.js (App Router)
+- Next.js 15
+- React 19
+- Supabase (Authentication & Database)
 - Tailwind CSS
-- Supabase (Auth & Database)
 - PapaParse (CSV parsing)
 
-## Prerequisites
-
-- Node.js 18+ and npm
-- Supabase account
-
-## Setup
+## Getting Started
 
 1. Clone the repository:
 
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/yourusername/vault.git
    cd vault
    ```
 
@@ -38,70 +34,42 @@ A full-stack web application for saving and organizing bookmarks, built with Nex
    npm install
    ```
 
-3. Create a Supabase project and set up the database:
+3. Set up environment variables:
 
-   - Create a new project in Supabase
-   - Create a new table called `saves` with the following schema:
-     ```sql
-     create table saves (
-       id uuid default uuid_generate_v4() primary key,
-       user_id uuid references auth.users not null,
-       url text not null,
-       domain text,
-       title text,
-       description text,
-       tags text[] default '{}',
-       og_image_url text,
-       favicon_url text,
-       fetch_failed boolean default false,
-       archived boolean default false,
-       created_at timestamp with time zone default timezone('utc'::text, now()) not null
-     );
-     ```
-   - Enable Row Level Security (RLS) and create policies:
-
-     ```sql
-     alter table saves enable row level security;
-
-     create policy "Users can view their own saves"
-       on saves for select
-       using (auth.uid() = user_id);
-
-     create policy "Users can insert their own saves"
-       on saves for insert
-       with check (auth.uid() = user_id);
-
-     create policy "Users can update their own saves"
-       on saves for update
-       using (auth.uid() = user_id);
-
-     create policy "Users can delete their own saves"
-       on saves for delete
-       using (auth.uid() = user_id);
-     ```
-
-4. Create a `.env.local` file in the root directory with your Supabase credentials:
+   Create a `.env.local` file with the following variables:
 
    ```
-   NEXT_PUBLIC_SUPABASE_URL=your-project-url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
 
-5. Start the development server:
+4. Run the development server:
 
    ```bash
    npm run dev
    ```
 
-6. Open [http://localhost:3000](http://localhost:3000) in your browser.
+5. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Usage
+## Database Schema
 
-1. Sign up for an account or log in
-2. Save URLs by entering them in the form
-3. Import bookmarks from a Pocket CSV export
-4. View, archive, and delete your saved items
-5. Access archived items in the archive page
+The application uses the following Supabase tables:
+
+### saves
+
+- id (UUID, primary key)
+- user_id (UUID, foreign key to auth.users)
+- url (TEXT)
+- title (TEXT)
+- description (TEXT)
+- og_image_url (TEXT)
+- favicon_url (TEXT)
+- time_added (BIGINT)
+- tags (TEXT[])
+- status (TEXT)
+- domain (TEXT)
+- created_at (TIMESTAMP)
+- updated_at (TIMESTAMP)
 
 ## License
 

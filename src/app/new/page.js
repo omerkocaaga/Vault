@@ -6,6 +6,30 @@ import { supabase } from "@/lib/supabase";
 import { fetchMetadata } from "@/lib/metadata";
 import Papa from "papaparse";
 
+function extractDomain(url) {
+	try {
+		const urlObj = new URL(url);
+		return urlObj.hostname;
+	} catch (error) {
+		console.error("Error extracting domain:", error);
+		return null;
+	}
+}
+
+function parseUnixTimestamp(timestamp) {
+	try {
+		// Convert string to number
+		const unixTimestamp = parseInt(timestamp);
+		if (isNaN(unixTimestamp)) {
+			throw new Error("Invalid timestamp");
+		}
+		return unixTimestamp;
+	} catch (error) {
+		console.error("Error parsing timestamp:", error);
+		return Math.floor(Date.now() / 1000); // Current Unix timestamp
+	}
+}
+
 export default function NewSave() {
 	const [url, setUrl] = useState("");
 	const [loading, setLoading] = useState(false);
@@ -116,20 +140,20 @@ export default function NewSave() {
 							const saveData = {
 								user_id: session.user.id,
 								url: row.url,
-								title: row.title || metadata.title || "",
+								title: row.title || metadata.title || row.url,
 								description: metadata.description || "",
-								tags,
-								...metadata,
+								og_image_url: metadata.og_image_url || "",
+								favicon_url: metadata.favicon_url || "",
 								time_added: row.time_added
-									? parseInt(row.time_added)
+									? parseUnixTimestamp(row.time_added)
 									: Math.floor(Date.now() / 1000),
+								tags: row.tags
+									? row.tags.split(",").map((tag) => tag.trim())
+									: [],
+								status: row.status || "unread",
 								created_at: new Date().toISOString(),
+								domain: extractDomain(row.url),
 							};
-
-							// Only add status if it exists in the CSV
-							if (row.status) {
-								saveData.status = row.status;
-							}
 
 							// Remove any undefined or null values
 							Object.keys(saveData).forEach((key) => {
@@ -137,6 +161,8 @@ export default function NewSave() {
 									delete saveData[key];
 								}
 							});
+
+							console.log("Saving data:", saveData);
 
 							saves.push(saveData);
 
