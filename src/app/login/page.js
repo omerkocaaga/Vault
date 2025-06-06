@@ -14,7 +14,7 @@ export default function Login() {
 	const [message, setMessage] = useState("");
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const { session } = useSession();
+	const { session, loading: sessionLoading } = useSession();
 
 	useEffect(() => {
 		const message = searchParams.get("message");
@@ -24,7 +24,7 @@ export default function Login() {
 	}, [searchParams]);
 
 	useEffect(() => {
-		if (session) {
+		if (session && !sessionLoading) {
 			const redirectTo = searchParams.get("redirectedFrom");
 			if (redirectTo && redirectTo !== "/") {
 				router.replace(redirectTo);
@@ -32,7 +32,7 @@ export default function Login() {
 				router.replace("/");
 			}
 		}
-	}, [session, router, searchParams]);
+	}, [session, sessionLoading, router, searchParams]);
 
 	const handleLogin = async (e) => {
 		e.preventDefault();

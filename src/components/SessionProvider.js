@@ -1,26 +1,17 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
-const SessionContext = createContext({});
+const SessionContext = createContext(null);
 
-export const useSession = () => {
-	return useContext(SessionContext);
-};
-
-export default function SessionProvider({ children }) {
+export function SessionProvider({ children }) {
 	const [session, setSession] = useState(null);
 	const [loading, setLoading] = useState(true);
-	const router = useRouter();
 
 	useEffect(() => {
-		console.log("SessionProvider: Initializing...");
-
 		// Get initial session
 		supabase.auth.getSession().then(({ data: { session } }) => {
-			console.log("SessionProvider: Initial session:", session);
 			setSession(session);
 			setLoading(false);
 		});
@@ -32,25 +23,27 @@ export default function SessionProvider({ children }) {
 			console.log("SessionProvider: Auth state changed:", _event, session);
 			setSession(session);
 			setLoading(false);
-			router.refresh();
 		});
 
-		return () => {
-			subscription?.unsubscribe();
-		};
-	}, [router]);
+		return () => subscription.unsubscribe();
+	}, []);
 
 	const value = {
 		session,
 		loading,
-		signOut: () => supabase.auth.signOut(),
 	};
 
-	if (loading) {
-		return null; // or a loading spinner
-	}
-
 	return (
-		<SessionContext.Provider value={value}>{children}</SessionContext.Provider>
+		<SessionContext.Provider value={value}>
+			{!loading && children}
+		</SessionContext.Provider>
 	);
+}
+
+export function useSession() {
+	const context = useContext(SessionContext);
+	if (context === undefined) {
+		throw new Error("useSession must be used within a SessionProvider");
+	}
+	return context;
 }
