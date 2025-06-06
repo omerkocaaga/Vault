@@ -13,3 +13,27 @@ export async function deleteSave(id) {
 		throw error;
 	}
 }
+
+export async function archiveSave(id) {
+	const { error } = await supabase
+		.from("saves")
+		.update({ status: "archived" })
+		.eq("id", id);
+
+	if (error) {
+		console.error("Error archiving save:", error);
+		throw error;
+	}
+}
+
+export async function unarchiveSave(id) {
+	const { error } = await supabase
+		.from("saves")
+		.update({ status: "active" })
+		.eq("id", id);
+
+	if (error) {
+		console.error("Error unarchiving save:", error);
+		throw error;
+	}
+}
