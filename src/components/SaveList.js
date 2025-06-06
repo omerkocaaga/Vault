@@ -1,13 +1,35 @@
 "use client";
 
-import { useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { supabase, markAsRead } from "@/lib/supabase";
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
 
-export default function SaveList({ saves, onArchive, onDelete, loading }) {
+export default function SaveList({
+	saves,
+	onArchive,
+	onDelete,
+	loading,
+	hasMore,
+	onLoadMore,
+	archiveButtonText = "Archive",
+}) {
 	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 	const [selectedSave, setSelectedSave] = useState(null);
 	const [loadingStates, setLoadingStates] = useState({});
+	const observer = useRef();
+	const lastSaveElementRef = useCallback(
+		(node) => {
+			if (loading) return;
+			if (observer.current) observer.current.disconnect();
+			observer.current = new IntersectionObserver((entries) => {
+				if (entries[0].isIntersecting && hasMore) {
+					onLoadMore();
+				}
+			});
+			if (node) observer.current.observe(node);
+		},
+		[loading, hasMore, onLoadMore]
+	);
 
 	console.log("SaveList received saves:", saves?.length || 0);
 
@@ -43,6 +65,21 @@ export default function SaveList({ saves, onArchive, onDelete, loading }) {
 		}
 	};
 
+	const handleItemClick = async (save) => {
+		if (!save?.id) return;
+
+		// If the item is unread, mark it as read
+		if (save.status === "unread") {
+			try {
+				await markAsRead(save.id);
+				// Update the local state to reflect the change
+				save.status = "active";
+			} catch (error) {
+				console.error("Error marking save as read:", error);
+			}
+		}
+	};
+
 	if (loading && (!saves || saves.length === 0)) {
 		return (
 			<div className="flex items-center justify-center h-64">
@@ -61,15 +98,26 @@ export default function SaveList({ saves, onArchive, onDelete, loading }) {
 
 	return (
 		<div className="space-y-4">
-			{saves.map((save) => (
+			{saves.map((save, index) => (
 				<div
 					key={save.id}
-					className="bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow"
+					ref={index === saves.length - 1 ? lastSaveElementRef : null}
+					className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow ${
+						save.status === "unread" ? "border-l-4 border-blue-500" : ""
+					}`}
 				>
 					<div className="flex items-start justify-between">
 						<div className="flex-1 min-w-0">
 							<h3 className="text-lg font-medium text-gray-900 truncate">
-								{save.title || save.url}
+								<a
+									href={save.url}
+									target="_blank"
+									rel="noopener noreferrer"
+									onClick={() => handleItemClick(save)}
+									className="hover:text-indigo-600"
+								>
+									{save.title || save.url}
+								</a>
 							</h3>
 							{save.description && (
 								<p className="mt-1 text-sm text-gray-500 line-clamp-2">
@@ -101,7 +149,7 @@ export default function SaveList({ saves, onArchive, onDelete, loading }) {
 								{loadingStates[save.id] ? (
 									<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
 								) : (
-									"Archive"
+									archiveButtonText
 								)}
 							</button>
 							<button
@@ -118,6 +166,12 @@ export default function SaveList({ saves, onArchive, onDelete, loading }) {
 					</div>
 				</div>
 			))}
+
+			{loading && (
+				<div className="flex items-center justify-center py-4">
+					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+				</div>
+			)}
 
 			<DeleteConfirmationModal
 				isOpen={deleteModalOpen}

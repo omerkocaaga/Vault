@@ -15,8 +15,11 @@ export default function Home() {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState(null);
 	const [newBookmarkModalOpen, setNewBookmarkModalOpen] = useState(false);
+	const [page, setPage] = useState(0);
+	const [hasMore, setHasMore] = useState(true);
+	const ITEMS_PER_PAGE = 10;
 
-	const fetchSaves = async () => {
+	const fetchSaves = async (pageNum = 0, append = false) => {
 		if (!session?.user?.id) {
 			console.log("No session user ID available");
 			return;
@@ -31,18 +34,26 @@ export default function Home() {
 				.from("saves")
 				.select("*")
 				.eq("user_id", session.user.id)
-				.order("time_added", { ascending: false });
+				.in("status", ["active", "unread"])
+				.order("time_added", { ascending: false })
+				.range(pageNum * ITEMS_PER_PAGE, (pageNum + 1) * ITEMS_PER_PAGE - 1);
 
 			if (error) {
 				throw error;
 			}
 
 			console.log("Raw data from database:", data);
-			const activeSaves =
-				data?.filter((save) => save.status !== "archived") || [];
+			const activeSaves = data || [];
 			console.log("Active saves after filtering:", activeSaves);
 
-			setSaves(activeSaves);
+			if (append) {
+				setSaves((prev) => [...prev, ...activeSaves]);
+			} else {
+				setSaves(activeSaves);
+			}
+
+			// Check if we have more items to load
+			setHasMore(activeSaves.length === ITEMS_PER_PAGE);
 		} catch (error) {
 			console.error("Error fetching saves:", error);
 			setError("Failed to load saved items");
@@ -54,11 +65,19 @@ export default function Home() {
 	useEffect(() => {
 		if (session?.user?.id && !sessionLoading) {
 			console.log("Session available, fetching saves");
-			fetchSaves();
+			fetchSaves(0, false);
 		} else {
 			console.log("No session available");
 		}
 	}, [session, sessionLoading]);
+
+	const handleLoadMore = () => {
+		if (!loading && hasMore) {
+			const nextPage = page + 1;
+			setPage(nextPage);
+			fetchSaves(nextPage, true);
+		}
+	};
 
 	const handleLogout = async () => {
 		try {
@@ -201,6 +220,8 @@ export default function Home() {
 						onArchive={handleArchive}
 						onDelete={handleDelete}
 						loading={loading}
+						hasMore={hasMore}
+						onLoadMore={handleLoadMore}
 					/>
 
 					<NewBookmarkModal

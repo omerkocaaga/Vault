@@ -37,3 +37,15 @@ export async function unarchiveSave(id) {
 		throw error;
 	}
 }
+
+export async function markAsRead(id) {
+	const { error } = await supabase
+		.from("saves")
+		.update({ status: "active" })
+		.eq("id", id);
+
+	if (error) {
+		console.error("Error marking save as read:", error);
+		throw error;
+	}
+}
