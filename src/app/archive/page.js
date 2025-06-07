@@ -68,7 +68,7 @@ export default function Archive() {
 
 	useEffect(() => {
 		fetchSaves(0, false);
-	}, []);
+	}, [fetchSaves]);
 
 	const handleLoadMore = () => {
 		if (!loading && hasMore) {

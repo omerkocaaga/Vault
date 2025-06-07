@@ -81,7 +81,7 @@ export default function Home() {
 		} else {
 			console.log("No session available");
 		}
-	}, [session, sessionLoading]);
+	}, [session, sessionLoading, fetchSaves]);
 
 	const handleLoadMore = () => {
 		if (!loading && hasMore) {
