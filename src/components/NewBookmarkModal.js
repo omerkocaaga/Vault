@@ -1,5 +1,8 @@
+"use client";
+
 import { useState } from "react";
 import Modal from "./Modal";
+import { fetchMetadata } from "@/lib/metadata";
 
 export default function NewBookmarkModal({
 	isOpen,
@@ -13,31 +16,58 @@ export default function NewBookmarkModal({
 		description: "",
 		tags: "",
 	});
+	const [isLoading, setIsLoading] = useState(false);
+	const [error, setError] = useState(null);
 
 	const handleSubmit = async (e) => {
 		e.preventDefault();
-		const tags = formData.tags
-			.split(",")
-			.map((tag) => tag.trim())
-			.filter((tag) => tag.length > 0);
+		setIsLoading(true);
+		setError(null);
 
-		await onSave({
-			...formData,
-			tags,
-		});
+		try {
+			const tags = formData.tags
+				.split(",")
+				.map((tag) => tag.trim())
+				.filter((tag) => tag.length > 0);
 
-		// Reset form
-		setFormData({
-			url: "",
-			title: "",
-			description: "",
-			tags: "",
-		});
+			// Fetch metadata for the URL
+			const metadata = await fetchMetadata(formData.url);
+			console.log("Fetched metadata:", metadata);
+
+			const saveData = {
+				...formData,
+				tags,
+				og_image_url: metadata.og_image_url || "",
+				favicon_url: metadata.favicon_url || "",
+			};
+
+			console.log("Saving data:", saveData);
+			await onSave(saveData);
+
+			// Reset form
+			setFormData({
+				url: "",
+				title: "",
+				description: "",
+				tags: "",
+			});
+		} catch (error) {
+			console.error("Error saving bookmark:", error);
+			setError("Failed to save bookmark. Please try again.");
+		} finally {
+			setIsLoading(false);
+		}
 	};
 
 	return (
 		<Modal isOpen={isOpen} onClose={onClose} title="Add New Bookmark">
 			<form onSubmit={handleSubmit} className="space-y-4">
+				{error && (
+					<div className="rounded-md bg-red-50 p-4">
+						<div className="text-sm text-red-700">{error}</div>
+					</div>
+				)}
+
 				<div>
 					<label
 						htmlFor="url"
@@ -121,10 +151,10 @@ export default function NewBookmarkModal({
 					</button>
 					<button
 						type="submit"
-						disabled={isSaving}
+						disabled={isLoading || isSaving}
 						className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
 					>
-						{isSaving ? (
+						{isLoading || isSaving ? (
 							<>
 								<svg
 									className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"

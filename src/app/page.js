@@ -9,6 +9,16 @@ import NewBookmarkModal from "@/components/NewBookmarkModal";
 import ImportCSVModal from "@/components/ImportCSVModal";
 import SaveList from "@/components/SaveList";
 
+function extractDomain(url) {
+	try {
+		const urlObj = new URL(url);
+		return urlObj.hostname;
+	} catch (error) {
+		console.error("Error extracting domain:", error);
+		return null;
+	}
+}
+
 export default function Home() {
 	const { session, loading: sessionLoading } = useSession();
 	const router = useRouter();
@@ -100,23 +110,36 @@ export default function Home() {
 
 		try {
 			setError(null);
-			const { url, title, description, tags } = formData;
+			const { url, title, description, tags, og_image_url, favicon_url } =
+				formData;
 
-			// Create the new save object
-			const newSave = {
-				url,
-				title,
-				description,
-				tags,
+			// Create the new save object with all fields explicitly set
+			const saveData = {
 				user_id: session.user.id,
-				status: "active",
+				url,
+				title: title || "",
+				description: description || "",
+				tags: tags || [],
+				status: "unread",
 				time_added: Math.floor(Date.now() / 1000),
-				// Add a temporary id that will be replaced by the real one
-				id: `temp-${Date.now()}`,
+				domain: extractDomain(url),
+				og_image_url: og_image_url || "",
+				favicon_url: favicon_url || "",
+				created_at: new Date().toISOString(),
 			};
 
+			// Remove any undefined or null values
+			Object.keys(saveData).forEach((key) => {
+				if (saveData[key] === undefined || saveData[key] === null) {
+					delete saveData[key];
+				}
+			});
+
 			// Optimistically add the new save to the state
-			setSaves((prevSaves) => [newSave, ...prevSaves]);
+			setSaves((prevSaves) => [
+				{ ...saveData, id: `temp-${Date.now()}` },
+				...prevSaves,
+			]);
 
 			// Close the modal immediately
 			setNewBookmarkModalOpen(false);
@@ -124,23 +147,14 @@ export default function Home() {
 			// Save to database
 			const { data, error } = await supabase
 				.from("saves")
-				.insert([
-					{
-						url,
-						title,
-						description,
-						tags,
-						user_id: session.user.id,
-						status: "active",
-						time_added: Math.floor(Date.now() / 1000),
-					},
-				])
+				.insert([saveData])
 				.select();
 
 			if (error) {
+				console.error("Error saving to database:", error);
 				// If there's an error, remove the optimistic update
 				setSaves((prevSaves) =>
-					prevSaves.filter((save) => save.id !== newSave.id)
+					prevSaves.filter((save) => save.id !== `temp-${Date.now()}`)
 				);
 				throw error;
 			}
@@ -149,7 +163,7 @@ export default function Home() {
 			if (data && data[0]) {
 				setSaves((prevSaves) => [
 					data[0],
-					...prevSaves.filter((save) => save.id !== newSave.id),
+					...prevSaves.filter((save) => save.id !== `temp-${Date.now()}`),
 				]);
 			}
 		} catch (error) {
