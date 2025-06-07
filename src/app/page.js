@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "@/components/SessionProvider";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -23,7 +23,7 @@ export default function Home() {
 	const { session, loading: sessionLoading } = useSession();
 	const router = useRouter();
 	const [saves, setSaves] = useState([]);
-	const [loading, setLoading] = useState(false);
+	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 	const [newBookmarkModalOpen, setNewBookmarkModalOpen] = useState(false);
 	const [importCSVModalOpen, setImportCSVModalOpen] = useState(false);
@@ -31,48 +31,47 @@ export default function Home() {
 	const [hasMore, setHasMore] = useState(true);
 	const ITEMS_PER_PAGE = 10;
 
-	const fetchSaves = async (pageNum = 0, append = false) => {
-		if (!session?.user?.id) {
-			console.log("No session user ID available");
-			return;
-		}
+	const fetchSaves = useCallback(
+		async (pageNum = 0, append = false) => {
+			try {
+				setLoading(true);
+				const {
+					data: { session: currentSession },
+				} = await supabase.auth.getSession();
+				if (!currentSession) {
+					router.push("/login");
+					return;
+				}
 
-		try {
-			setLoading(true);
-			setError(null);
+				const { data, error } = await supabase
+					.from("saves")
+					.select("*")
+					.eq("user_id", currentSession.user.id)
+					.eq("status", "unread")
+					.order("time_added", { ascending: false })
+					.range(pageNum * ITEMS_PER_PAGE, (pageNum + 1) * ITEMS_PER_PAGE - 1);
 
-			console.log("Fetching saves for user:", session.user.id);
-			const { data, error } = await supabase
-				.from("saves")
-				.select("*")
-				.eq("user_id", session.user.id)
-				.in("status", ["active", "unread"])
-				.order("time_added", { ascending: false })
-				.range(pageNum * ITEMS_PER_PAGE, (pageNum + 1) * ITEMS_PER_PAGE - 1);
+				if (error) throw error;
 
-			if (error) {
-				throw error;
+				const activeSaves = data || [];
+
+				if (append) {
+					setSaves((prev) => [...prev, ...activeSaves]);
+				} else {
+					setSaves(activeSaves);
+				}
+
+				// Check if we have more items to load
+				setHasMore(activeSaves.length === ITEMS_PER_PAGE);
+			} catch (error) {
+				console.error("Error fetching saves:", error);
+				setError("Failed to load saved items");
+			} finally {
+				setLoading(false);
 			}
-
-			console.log("Raw data from database:", data);
-			const activeSaves = data || [];
-			console.log("Active saves after filtering:", activeSaves);
-
-			if (append) {
-				setSaves((prev) => [...prev, ...activeSaves]);
-			} else {
-				setSaves(activeSaves);
-			}
-
-			// Check if we have more items to load
-			setHasMore(activeSaves.length === ITEMS_PER_PAGE);
-		} catch (error) {
-			console.error("Error fetching saves:", error);
-			setError("Failed to load saved items");
-		} finally {
-			setLoading(false);
-		}
-	};
+		},
+		[router]
+	);
 
 	useEffect(() => {
 		if (session?.user?.id && !sessionLoading) {

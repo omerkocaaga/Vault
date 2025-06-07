@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase, deleteSave, unarchiveSave } from "@/lib/supabase";
 import DeleteConfirmationModal from "@/components/DeleteConfirmationModal";
 import Header from "@/components/Header";
@@ -24,47 +24,50 @@ export default function Archive() {
 	const router = useRouter();
 	const { session } = useSession();
 
-	const fetchSaves = async (pageNum = 0, append = false) => {
-		try {
-			setLoading(true);
-			const {
-				data: { session: currentSession },
-			} = await supabase.auth.getSession();
-			if (!currentSession) {
-				router.push("/login");
-				return;
+	const fetchSaves = useCallback(
+		async (pageNum = 0, append = false) => {
+			try {
+				setLoading(true);
+				const {
+					data: { session: currentSession },
+				} = await supabase.auth.getSession();
+				if (!currentSession) {
+					router.push("/login");
+					return;
+				}
+
+				const { data, error } = await supabase
+					.from("saves")
+					.select("*")
+					.eq("user_id", currentSession.user.id)
+					.eq("status", "archived")
+					.order("time_added", { ascending: false })
+					.range(pageNum * ITEMS_PER_PAGE, (pageNum + 1) * ITEMS_PER_PAGE - 1);
+
+				if (error) throw error;
+
+				const savesWithKeys = data.map((save) => ({
+					...save,
+					key: `${save.id}-${save.time_added}`,
+				}));
+
+				if (append) {
+					setSaves((prev) => [...prev, ...savesWithKeys]);
+				} else {
+					setSaves(savesWithKeys || []);
+				}
+
+				// Check if we have more items to load
+				setHasMore(data.length === ITEMS_PER_PAGE);
+			} catch (error) {
+				console.error("Error fetching saves:", error);
+				setError("Failed to load saves");
+			} finally {
+				setLoading(false);
 			}
-
-			const { data, error } = await supabase
-				.from("saves")
-				.select("*")
-				.eq("user_id", currentSession.user.id)
-				.eq("status", "archived")
-				.order("time_added", { ascending: false })
-				.range(pageNum * ITEMS_PER_PAGE, (pageNum + 1) * ITEMS_PER_PAGE - 1);
-
-			if (error) throw error;
-
-			const savesWithKeys = data.map((save) => ({
-				...save,
-				key: `${save.id}-${save.time_added}`,
-			}));
-
-			if (append) {
-				setSaves((prev) => [...prev, ...savesWithKeys]);
-			} else {
-				setSaves(savesWithKeys || []);
-			}
-
-			// Check if we have more items to load
-			setHasMore(data.length === ITEMS_PER_PAGE);
-		} catch (error) {
-			console.error("Error fetching saves:", error);
-			setError("Failed to load saves");
-		} finally {
-			setLoading(false);
-		}
-	};
+		},
+		[router]
+	);
 
 	useEffect(() => {
 		fetchSaves(0, false);
