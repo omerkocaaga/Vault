@@ -20,13 +20,13 @@ export default function Layout({ children, onAddNew, onLogout, onImportCSV }) {
 	}
 
 	return (
-		<div className="min-h-screen bg-gray-50">
+		<div className="min-h-screen container mx-auto px-4 sm:px-6 lg:px-12">
 			<Header
 				onLogout={onLogout}
 				onAddNew={onAddNew}
 				onImportCSV={onImportCSV}
 			/>
-			<main className="pt-20 pb-8">{children}</main>
+			<main className="pb-8">{children}</main>
 		</div>
 	);
 }

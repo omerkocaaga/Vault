@@ -103,7 +103,7 @@ export default function ImportCSVModal({ isOpen, onClose, onImportComplete }) {
 							const saveData = {
 								user_id: session.user.id,
 								url: row.url,
-								title: row.title || metadata.title || row.url,
+								title: metadata.title || row.title,
 								description: metadata.description || "",
 								og_image_url: metadata.og_image_url || "",
 								favicon_url: metadata.favicon_url || "",
@@ -180,13 +180,15 @@ export default function ImportCSVModal({ isOpen, onClose, onImportComplete }) {
 	if (!isOpen) return null;
 
 	return (
-		<div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-			<div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4">
+		<div className="fixed inset-0 bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 flex items-center justify-center z-50">
+			<div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-lg w-full mx-4">
 				<div className="flex justify-between items-center mb-4">
-					<h2 className="text-lg font-medium text-gray-900">Import from CSV</h2>
+					<h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+						Import from CSV
+					</h2>
 					<button
 						onClick={onClose}
-						className="text-gray-400 hover:text-gray-500"
+						className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
 					>
 						<span className="sr-only">Close</span>
 						<svg
@@ -206,8 +208,10 @@ export default function ImportCSVModal({ isOpen, onClose, onImportComplete }) {
 				</div>
 
 				{error && (
-					<div className="rounded-md bg-red-50 p-4 mb-4">
-						<div className="text-sm text-red-700">{error}</div>
+					<div className="rounded-md bg-red-50 dark:bg-red-900/50 p-4 mb-4">
+						<div className="text-sm text-red-700 dark:text-red-200">
+							{error}
+						</div>
 					</div>
 				)}
 

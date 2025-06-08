@@ -8,6 +8,18 @@ const nextConfig = {
 			},
 		},
 	},
+	images: {
+		remotePatterns: [
+			{
+				protocol: "https",
+				hostname: "**",
+			},
+			{
+				protocol: "http",
+				hostname: "**",
+			},
+		],
+	},
 	webpack: (config, { isServer }) => {
 		if (!isServer) {
 			config.resolve.fallback = {

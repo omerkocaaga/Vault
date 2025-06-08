@@ -1,8 +1,6 @@
-import { Inter } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
 import "./globals.css";
 import { SessionProvider } from "@/components/SessionProvider";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
 	title: "Vault - Save and Organize Links",
@@ -11,10 +9,10 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
 	return (
-		<html lang="en">
-			<body className={inter.className}>
+		<html lang="en" className={GeistSans.className}>
+			<body>
 				<SessionProvider>
-					<main className="min-h-screen bg-gray-50">{children}</main>
+					<main className="min-h-screen">{children}</main>
 				</SessionProvider>
 			</body>
 		</html>

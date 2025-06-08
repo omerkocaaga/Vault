@@ -10,7 +10,7 @@ export default function DeleteConfirmationModal({
 	return (
 		<Modal isOpen={isOpen} onClose={onClose} title="Delete Item">
 			<div className="mt-2">
-				<p className="text-sm text-gray-500">
+				<p className="text-sm text-gray-500 dark:text-gray-400">
 					Are you sure you want to delete &quot;{itemTitle}&quot;? This action
 					cannot be undone.
 				</p>
@@ -53,7 +53,7 @@ export default function DeleteConfirmationModal({
 				</button>
 				<button
 					type="button"
-					className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:mt-0"
+					className="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-gray-700 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 sm:col-start-1 sm:mt-0"
 					onClick={onClose}
 					disabled={isDeleting}
 				>

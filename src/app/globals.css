@@ -2,14 +2,118 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-	--foreground-rgb: 0, 0, 0;
-	--background-rgb: 249, 250, 251;
+@theme {
+	--background-image-gradient-radial: radial-gradient(var(--tw-gradient-stops));
+	--background-image-gradient-conic: conic-gradient(
+		from 180deg at 50% 50%,
+		var(--tw-gradient-stops)
+	);
+
+	--color-foreground: var(--foreground);
+	--color-background: var(--background);
+	--color-elevation: var(--elevation);
+	--color-primary: var(--primary);
+	--color-primary-light: var(--primary-light);
+	--color-focus: var(--focus);
+	--color-pure-white: var(--pure-white);
+	--color-pure-black: var(--pure-black);
+	--color-invert: rgb(var(--invert));
+	--color-alpha: rgb(var(--alpha));
+
+	--tracking-widest: 0.25em;
+
+	--font-sans: var(--font-geist);
+	--font-mono: var(--font-geist-mono);
+
+	--aspect-4\/3: 4 / 3;
 }
 
-body {
-	color: rgb(var(--foreground-rgb));
-	background: rgb(var(--background-rgb));
+@layer base {
+	:root {
+		--foreground: #211e1c;
+		--background: #fcfcfc;
+		--elevation: #f3f2f2;
+
+		--focus: #7d7978;
+		--pure-white: #fff;
+		--pure-black: #000;
+		--invert: 0 0 0;
+		--alpha: 255 255 255;
+
+		--primary: #f36c31;
+		--primary-light: #f47c48;
+
+		--layout-mw: 1536px;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		:root {
+			--foreground: #fcfcfc;
+			--background: #211e1c;
+			--elevation: #2f2e2d;
+
+			--focus: #a9a4a2;
+			--pure-white: #fff;
+			--pure-black: #000;
+			--invert: 255 255 255;
+			--alpha: 0 0 0;
+
+			--primary: #f36c31;
+			--primary-light: #f47c48;
+		}
+	}
+
+	html {
+		height: 100%;
+		--scroll-behavior: smooth !important;
+		scroll-behavior: smooth !important;
+	}
+
+	body {
+		color: var(--foreground);
+		background: var(--background);
+		max-width: var(--layout-mw);
+		margin: 0 auto;
+		font-feature-settings: "dlig", "tnum", "cv03", "cv04", "cv10", "cpsp";
+	}
+
+	svg {
+		color: var(--focus);
+	}
+}
+
+@layer components {
+	.bg-primary {
+		background-color: var(--primary);
+	}
+
+	.bg-primary-light {
+		background-color: var(--primary-light);
+	}
+
+	.bg-elevation {
+		background-color: var(--elevation);
+	}
+
+	.text-primary {
+		color: var(--primary);
+	}
+
+	.text-foreground {
+		color: var(--foreground);
+	}
+
+	.border-focus {
+		border-color: var(--focus);
+	}
+
+	.hover\:bg-primary-light:hover {
+		background-color: var(--primary-light);
+	}
+
+	.hover\:text-primary:hover {
+		color: var(--primary);
+	}
 }
 
 /* Custom styles for aspect ratio */

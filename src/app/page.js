@@ -63,6 +63,7 @@ export default function Home() {
 
 				// Check if we have more items to load
 				setHasMore(activeSaves.length === ITEMS_PER_PAGE);
+				setPage(pageNum); // Update the page state after successful fetch
 			} catch (error) {
 				console.error("Error fetching saves:", error);
 				setError("Failed to load saved items");
@@ -76,11 +77,14 @@ export default function Home() {
 	useEffect(() => {
 		if (session?.user?.id && !sessionLoading) {
 			console.log("Session available, fetching saves");
-			fetchSaves(0, false);
+			// Only fetch initial saves if we don't have any
+			if (saves.length === 0) {
+				fetchSaves(0, false);
+			}
 		} else {
 			console.log("No session available");
 		}
-	}, [session, sessionLoading, fetchSaves]);
+	}, [session, sessionLoading, fetchSaves, saves.length]);
 
 	const handleLoadMore = () => {
 		if (!loading && hasMore) {
@@ -134,12 +138,6 @@ export default function Home() {
 				}
 			});
 
-			// Optimistically add the new save to the state
-			setSaves((prevSaves) => [
-				{ ...saveData, id: `temp-${Date.now()}` },
-				...prevSaves,
-			]);
-
 			// Close the modal immediately
 			setNewBookmarkModalOpen(false);
 
@@ -151,19 +149,13 @@ export default function Home() {
 
 			if (error) {
 				console.error("Error saving to database:", error);
-				// If there's an error, remove the optimistic update
-				setSaves((prevSaves) =>
-					prevSaves.filter((save) => save.id !== `temp-${Date.now()}`)
-				);
 				throw error;
 			}
 
 			// Update the state with the new item from the database
 			if (data && data[0]) {
-				setSaves((prevSaves) => [
-					data[0],
-					...prevSaves.filter((save) => save.id !== `temp-${Date.now()}`),
-				]);
+				// Fetch the latest saves to ensure we have the correct order
+				fetchSaves(0, false);
 			}
 		} catch (error) {
 			console.error("Error saving bookmark:", error);
@@ -228,37 +220,33 @@ export default function Home() {
 			onLogout={handleLogout}
 			onImportCSV={() => setImportCSVModalOpen(true)}
 		>
-			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-				<div className="space-y-6">
-					{error && (
-						<div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative">
-							{error}
-						</div>
-					)}
-
-					<SaveList
-						saves={saves}
-						onArchive={handleArchive}
-						onDelete={handleDelete}
-						loading={loading}
-						hasMore={hasMore}
-						onLoadMore={handleLoadMore}
-					/>
-
-					<NewBookmarkModal
-						isOpen={newBookmarkModalOpen}
-						onClose={() => setNewBookmarkModalOpen(false)}
-						onSave={handleNewBookmark}
-						loading={loading}
-					/>
-
-					<ImportCSVModal
-						isOpen={importCSVModalOpen}
-						onClose={() => setImportCSVModalOpen(false)}
-						onImportComplete={handleImportComplete}
-					/>
+			{error && (
+				<div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative">
+					{error}
 				</div>
-			</div>
+			)}
+
+			<SaveList
+				saves={saves}
+				onArchive={handleArchive}
+				onDelete={handleDelete}
+				loading={loading}
+				hasMore={hasMore}
+				onLoadMore={handleLoadMore}
+			/>
+
+			<NewBookmarkModal
+				isOpen={newBookmarkModalOpen}
+				onClose={() => setNewBookmarkModalOpen(false)}
+				onSave={handleNewBookmark}
+				loading={loading}
+			/>
+
+			<ImportCSVModal
+				isOpen={importCSVModalOpen}
+				onClose={() => setImportCSVModalOpen(false)}
+				onImportComplete={handleImportComplete}
+			/>
 		</Layout>
 	);
 }
