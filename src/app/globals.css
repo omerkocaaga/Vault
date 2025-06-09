@@ -44,6 +44,13 @@
 		--primary-light: #f47c48;
 
 		--layout-mw: 1536px;
+
+		/* Font weights */
+		--font-weight-light: 300;
+		--font-weight-normal: 400;
+		--font-weight-medium: 500;
+		--font-weight-semibold: 600;
+		--font-weight-bold: 700;
 	}
 
 	@media (prefers-color-scheme: dark) {
@@ -113,6 +120,27 @@
 
 	.hover\:text-primary:hover {
 		color: var(--primary);
+	}
+
+	/* Font weights */
+	.font-light {
+		font-weight: var(--font-weight-light);
+	}
+
+	.font-normal {
+		font-weight: var(--font-weight-normal);
+	}
+
+	.font-medium {
+		font-weight: var(--font-weight-medium);
+	}
+
+	.font-semibold {
+		font-weight: var(--font-weight-semibold);
+	}
+
+	.font-bold {
+		font-weight: var(--font-weight-bold);
 	}
 }
 

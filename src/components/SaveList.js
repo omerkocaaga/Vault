@@ -156,9 +156,9 @@ export default function SaveList({
 					)}
 					<div className="flex flex-col items-start justify-between space-y-4">
 						<div>
-							<div className="flex items-center space-x-2 mb-1">
+							<div className="flex flex-col items-baseline mb-1">
 								{save.favicon_url && !failedImages.has(save.favicon_url) && (
-									<div className="relative w-4 h-4">
+									<div className="relative w-4 h-4 mb-1">
 										<Image
 											src={save.favicon_url}
 											alt=""
@@ -172,16 +172,16 @@ export default function SaveList({
 										/>
 									</div>
 								)}
-								<h3 className="flex-1 text-base text-gray-900 dark:text-gray-100 line-clamp-1">
+								<h3 className="flex-1 text-base text-gray-900 dark:text-gray-100 ">
 									{save.title || save.url}
 								</h3>
 							</div>
 
-							{save.description && (
+							{/* {save.description && (
 								<p className="text-sm text-gray-400 dark:text-gray-500 line-clamp-2 mb-2">
 									{save.description}
 								</p>
-							)}
+							)} */}
 							<p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
 								{timeAgo(save.time_added)}
 							</p>

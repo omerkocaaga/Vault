@@ -8,7 +8,10 @@ export default function Header({ onLogout, onAddNew, onImportCSV }) {
 		<header className="flex justify-between items-center py-32">
 			<Link href="/" className="flex space-x-4 items-center">
 				<div className="w-7 h-7 rounded-full bg-primary"></div>
-				<span className="text-2xl text-gray-900 dark:text-gray-100">Vault</span>
+
+				<span className="text-2xl tracking-widest font-mono font-light text-gray-900 dark:text-gray-100">
+					VAULT
+				</span>
 			</Link>
 			<div className="flex items-center gap-4">
 				<Link
