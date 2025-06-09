@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase, markAsRead } from "@/lib/supabase";
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
+import AddToCollectionModal from "./AddToCollectionModal";
 
 function timeAgo(timestamp) {
 	const seconds = Math.floor(Date.now() / 1000 - timestamp);
@@ -38,6 +39,8 @@ export default function SaveList({
 	archiveButtonText = "Archive",
 }) {
 	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+	const [addToCollectionModalOpen, setAddToCollectionModalOpen] =
+		useState(false);
 	const [selectedSave, setSelectedSave] = useState(null);
 	const [loadingStates, setLoadingStates] = useState({});
 	const [failedImages, setFailedImages] = useState(new Set());
@@ -126,80 +129,89 @@ export default function SaveList({
 	return (
 		<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-14 gap-y-32 items-start">
 			{saves.map((save, index) => (
-				<a
+				<div
 					key={`${save.id}-${index}`}
 					ref={index === saves.length - 1 ? lastSaveElementRef : null}
-					href={save.url}
-					target="_blank"
-					rel="noopener noreferrer"
-					onClick={(e) => {
-						e.preventDefault();
-						// handleItemClick(save);
-						window.open(save.url, "_blank");
-					}}
 				>
-					{save.og_image_url && (
-						<div className="w-full relative mb-5">
-							<Image
-								src={save.og_image_url}
-								alt={save.title}
-								width={0}
-								height={0}
-								sizes="100vw"
-								className="w-full h-auto"
-								style={{ objectFit: "contain" }}
-								onError={(e) => {
-									e.currentTarget.style.display = "none";
-								}}
-							/>
-						</div>
-					)}
-					<div className="flex flex-col items-start justify-between space-y-4">
-						<div>
-							<div className="flex flex-col items-baseline mb-1">
-								{save.favicon_url && !failedImages.has(save.favicon_url) && (
-									<div className="relative w-4 h-4 mb-1">
-										<Image
-											src={save.favicon_url}
-											alt=""
-											fill
-											className="rounded-full"
-											onError={(e) => {
-												setFailedImages(
-													(prev) => new Set([...prev, save.favicon_url])
-												);
-											}}
-										/>
+					<a
+						href={save.url}
+						target="_blank"
+						rel="noopener noreferrer"
+						onClick={(e) => {
+							e.preventDefault();
+							window.open(save.url, "_blank");
+						}}
+						className="block"
+					>
+						{save.og_image_url && (
+							<div className="w-full relative mb-5">
+								<Image
+									src={save.og_image_url}
+									alt={save.title}
+									width={0}
+									height={0}
+									sizes="100vw"
+									className="w-full h-auto"
+									style={{ objectFit: "contain" }}
+									onError={(e) => {
+										e.currentTarget.style.display = "none";
+									}}
+								/>
+							</div>
+						)}
+						<div className="flex flex-col items-start justify-between space-y-4">
+							<div>
+								<div className="flex flex-col items-baseline mb-1">
+									{save.favicon_url && !failedImages.has(save.favicon_url) && (
+										<div className="relative w-4 h-4 mb-1">
+											<Image
+												src={save.favicon_url}
+												alt=""
+												fill
+												className="rounded-full"
+												onError={(e) => {
+													setFailedImages(
+														(prev) => new Set([...prev, save.favicon_url])
+													);
+												}}
+											/>
+										</div>
+									)}
+									<h3 className="flex-1 text-base text-gray-900 dark:text-gray-100 ">
+										{save.title || save.url}
+									</h3>
+								</div>
+
+								<p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
+									{timeAgo(save.time_added)}
+								</p>
+								{save.tags && save.tags.length > 0 && (
+									<div className="flex flex-wrap gap-1.5">
+										{save.tags.map((tag, index) => (
+											<span
+												key={index}
+												className="inline-flex font-mono items-center px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300"
+											>
+												{tag}
+											</span>
+										))}
 									</div>
 								)}
-								<h3 className="flex-1 text-base text-gray-900 dark:text-gray-100 ">
-									{save.title || save.url}
-								</h3>
 							</div>
-
-							{/* {save.description && (
-								<p className="text-sm text-gray-400 dark:text-gray-500 line-clamp-2 mb-2">
-									{save.description}
-								</p>
-							)} */}
-							<p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
-								{timeAgo(save.time_added)}
-							</p>
-							{save.tags && save.tags.length > 0 && (
-								<div className="flex flex-wrap gap-1.5">
-									{save.tags.map((tag, index) => (
-										<span
-											key={index}
-											className="inline-flex font-mono items-center px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300"
-										>
-											{tag}
-										</span>
-									))}
-								</div>
-							)}
 						</div>
+					</a>
 
-						{/* <div className="ml-4 flex-shrink-0 flex space-x-2">
+					<div className="mt-4 flex space-x-2">
+						<button
+							onClick={() => {
+								setSelectedSave(save);
+								setAddToCollectionModalOpen(true);
+							}}
+							className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+						>
+							Add to Collection
+						</button>
+						{onArchive && (
 							<button
 								onClick={() => handleArchive(save)}
 								disabled={loadingStates[save.id]}
@@ -211,6 +223,8 @@ export default function SaveList({
 									archiveButtonText
 								)}
 							</button>
+						)}
+						{onDelete && (
 							<button
 								onClick={() => {
 									setSelectedSave(save);
@@ -221,9 +235,9 @@ export default function SaveList({
 							>
 								Delete
 							</button>
-						</div> */}
+						)}
 					</div>
-				</a>
+				</div>
 			))}
 
 			{loading && (
@@ -247,6 +261,18 @@ export default function SaveList({
 				}}
 				title="Delete Save"
 				message="Are you sure you want to delete this item? This action cannot be undone."
+			/>
+
+			<AddToCollectionModal
+				isOpen={addToCollectionModalOpen}
+				onClose={() => {
+					setAddToCollectionModalOpen(false);
+					setSelectedSave(null);
+				}}
+				onSuccess={() => {
+					// Optionally refresh the saves list or show a success message
+				}}
+				saveId={selectedSave?.id}
 			/>
 		</div>
 	);
