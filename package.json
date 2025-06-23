@@ -9,6 +9,7 @@
 		"lint": "next lint"
 	},
 	"dependencies": {
+		"@babel/runtime": "^7.24.0",
 		"@geist-ui/icons": "^1.0.2",
 		"@headlessui/react": "^2.2.4",
 		"@supabase/ssr": "^0.6.1",

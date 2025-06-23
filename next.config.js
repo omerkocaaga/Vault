@@ -1,11 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-	experimental: {
-		turbo: {
-			rules: {
-				// Configure Turbopack rules
-				"*.css": ["postcss"],
-			},
+	turbopack: {
+		rules: {
+			// Configure Turbopack rules
+			"*.css": ["postcss"],
 		},
 	},
 	images: {
