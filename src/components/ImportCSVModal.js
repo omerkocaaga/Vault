@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { fetchMetadata } from "@/lib/metadata";
 import Papa from "papaparse";
+import Modal from "./Modal";
 
 function extractDomain(url) {
 	try {
@@ -180,33 +181,8 @@ export default function ImportCSVModal({ isOpen, onClose, onImportComplete }) {
 	if (!isOpen) return null;
 
 	return (
-		<div className="fixed inset-0 bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 flex items-center justify-center z-50">
-			<div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-lg w-full mx-4">
-				<div className="flex justify-between items-center mb-4">
-					<h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-						Import from CSV
-					</h2>
-					<button
-						onClick={onClose}
-						className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
-					>
-						<span className="sr-only">Close</span>
-						<svg
-							className="h-6 w-6"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-						>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								strokeWidth={2}
-								d="M6 18L18 6M6 6l12 12"
-							/>
-						</svg>
-					</button>
-				</div>
-
+		<Modal isOpen={isOpen} onClose={onClose} title="Import from CSV">
+			<form onSubmit={handleCsvImport} className="space-y-4">
 				{error && (
 					<div className="rounded-md bg-red-50 dark:bg-red-900/50 p-4 mb-4">
 						<div className="text-sm text-red-700 dark:text-red-200">
@@ -215,64 +191,62 @@ export default function ImportCSVModal({ isOpen, onClose, onImportComplete }) {
 					</div>
 				)}
 
-				<form onSubmit={handleCsvImport}>
-					<div className="mb-4">
-						<label
-							htmlFor="csv"
-							className="block text-sm font-medium text-gray-700"
-						>
-							CSV File
-						</label>
-						<input
-							type="file"
-							id="csv"
-							accept=".csv"
-							onChange={(e) => setCsvFile(e.target.files[0])}
-							required
-							className="mt-1 block w-full text-sm text-gray-500
+				<div className="mb-4">
+					<label
+						htmlFor="csv"
+						className="block text-sm font-medium text-gray-700"
+					>
+						CSV File
+					</label>
+					<input
+						type="file"
+						id="csv"
+						accept=".csv"
+						onChange={(e) => setCsvFile(e.target.files[0])}
+						required
+						className="mt-1 block w-full text-sm text-gray-500
                 file:mr-4 file:py-2 file:px-4
                 file:rounded-md file:border-0
                 file:text-sm file:font-medium
                 file:bg-indigo-50 file:text-indigo-700
                 hover:file:bg-indigo-100"
-						/>
-					</div>
-					{importing && importProgress.total > 0 && (
-						<div className="mb-4">
-							<div className="text-sm text-gray-600 mb-2">
-								Processing {importProgress.current} of {importProgress.total}{" "}
-								items...
-							</div>
-							<div className="w-full bg-gray-200 rounded-full h-2.5">
-								<div
-									className="bg-indigo-600 h-2.5 rounded-full"
-									style={{
-										width: `${
-											(importProgress.current / importProgress.total) * 100
-										}%`,
-									}}
-								></div>
-							</div>
+					/>
+				</div>
+				{importing && importProgress.total > 0 && (
+					<div className="mb-4">
+						<div className="text-sm text-gray-600 mb-2">
+							Processing {importProgress.current} of {importProgress.total}{" "}
+							items...
 						</div>
-					)}
-					<div className="flex justify-end gap-4">
-						<button
-							type="button"
-							onClick={onClose}
-							className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-						>
-							Cancel
-						</button>
-						<button
-							type="submit"
-							disabled={importing}
-							className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-						>
-							{importing ? "Importing..." : "Import CSV"}
-						</button>
+						<div className="w-full bg-gray-200 rounded-full h-2.5">
+							<div
+								className="bg-indigo-600 h-2.5 rounded-full"
+								style={{
+									width: `${
+										(importProgress.current / importProgress.total) * 100
+									}%`,
+								}}
+							></div>
+						</div>
 					</div>
-				</form>
-			</div>
-		</div>
+				)}
+				<div className="flex justify-end gap-4">
+					<button
+						type="button"
+						onClick={onClose}
+						className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+					>
+						Cancel
+					</button>
+					<button
+						type="submit"
+						disabled={importing}
+						className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+					>
+						{importing ? "Importing..." : "Import CSV"}
+					</button>
+				</div>
+			</form>
+		</Modal>
 	);
 }

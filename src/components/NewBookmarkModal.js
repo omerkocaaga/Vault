@@ -1,15 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Modal from "./Modal";
 import { fetchMetadata } from "@/lib/metadata";
-
-function decodeHtmlEntities(text) {
-	if (!text) return "";
-	const textarea = document.createElement("textarea");
-	textarea.innerHTML = text;
-	return textarea.value;
-}
 
 export default function NewBookmarkModal({
 	isOpen,
@@ -26,50 +19,65 @@ export default function NewBookmarkModal({
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState(null);
 
-	const handleSubmit = async (e) => {
-		e.preventDefault();
-		setIsLoading(true);
-		setError(null);
+	const decodeHtmlEntities = useCallback((text) => {
+		if (!text) return "";
+		const textarea = document.createElement("textarea");
+		textarea.innerHTML = text;
+		return textarea.value;
+	}, []);
 
-		try {
-			const tags = formData.tags
-				.split(",")
-				.map((tag) => tag.trim())
-				.filter((tag) => tag.length > 0);
+	const handleInputChange = useCallback((e) => {
+		const { id, value } = e.target;
+		setFormData((prev) => ({ ...prev, [id]: value }));
+	}, []);
 
-			// Fetch metadata for the URL
-			const metadata = await fetchMetadata(formData.url);
-			console.log("Fetched metadata:", metadata);
+	const handleSubmit = useCallback(
+		async (e) => {
+			e.preventDefault();
+			setIsLoading(true);
+			setError(null);
 
-			const saveData = {
-				...formData,
-				tags,
-				title: formData.title || metadata.title || "",
-				description:
-					formData.description ||
-					decodeHtmlEntities(metadata.description) ||
-					"",
-				og_image_url: metadata.og_image_url || "",
-				favicon_url: metadata.favicon_url || "",
-			};
+			try {
+				const tags = formData.tags
+					.split(",")
+					.map((tag) => tag.trim())
+					.filter((tag) => tag.length > 0);
 
-			console.log("Saving data:", saveData);
-			await onSave(saveData);
+				// Fetch metadata for the URL
+				const metadata = await fetchMetadata(formData.url);
+				console.log("Fetched metadata:", metadata);
 
-			// Reset form
-			setFormData({
-				url: "",
-				title: "",
-				description: "",
-				tags: "",
-			});
-		} catch (error) {
-			console.error("Error saving bookmark:", error);
-			setError("Failed to save bookmark. Please try again.");
-		} finally {
-			setIsLoading(false);
-		}
-	};
+				const saveData = {
+					...formData,
+					tags,
+					title: formData.title || metadata.title || "",
+					description:
+						formData.description ||
+						decodeHtmlEntities(metadata.description) ||
+						"",
+					og_image_url: metadata.og_image_url || "",
+					favicon_url: metadata.favicon_url || "",
+				};
+
+				console.log("Saving data:", saveData);
+				await onSave(saveData);
+
+				// Reset form
+				setFormData({
+					url: "",
+					title: "",
+					description: "",
+					tags: "",
+				});
+			} catch (error) {
+				console.error("Error saving bookmark:", error);
+				setError("Failed to save bookmark. Please try again.");
+			} finally {
+				setIsLoading(false);
+			}
+		},
+		[formData, decodeHtmlEntities, onSave]
+	);
 
 	return (
 		<Modal isOpen={isOpen} onClose={onClose} title="Add New Bookmark">
@@ -92,7 +100,7 @@ export default function NewBookmarkModal({
 						id="url"
 						required
 						value={formData.url}
-						onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+						onChange={handleInputChange}
 						className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
 						placeholder="https://example.com"
 					/>
@@ -109,9 +117,7 @@ export default function NewBookmarkModal({
 						type="text"
 						id="title"
 						value={formData.title}
-						onChange={(e) =>
-							setFormData({ ...formData, title: e.target.value })
-						}
+						onChange={handleInputChange}
 						className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
 						placeholder="Custom title (will use page title if empty)"
 					/>
@@ -127,9 +133,7 @@ export default function NewBookmarkModal({
 					<textarea
 						id="description"
 						value={formData.description}
-						onChange={(e) =>
-							setFormData({ ...formData, description: e.target.value })
-						}
+						onChange={handleInputChange}
 						className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
 						placeholder="Custom description (will use page description if empty)"
 						rows={3}
@@ -147,7 +151,7 @@ export default function NewBookmarkModal({
 						type="text"
 						id="tags"
 						value={formData.tags}
-						onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+						onChange={handleInputChange}
 						className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
 						placeholder="tag1, tag2, tag3"
 					/>

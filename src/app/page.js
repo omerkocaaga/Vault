@@ -24,6 +24,7 @@ export default function Home() {
 	const router = useRouter();
 	const [saves, setSaves] = useState([]);
 	const [loading, setLoading] = useState(true);
+	const [loadingMore, setLoadingMore] = useState(false);
 	const [error, setError] = useState(null);
 	const [newBookmarkModalOpen, setNewBookmarkModalOpen] = useState(false);
 	const [importCSVModalOpen, setImportCSVModalOpen] = useState(false);
@@ -34,7 +35,11 @@ export default function Home() {
 	const fetchSaves = useCallback(
 		async (pageNum = 0, append = false) => {
 			try {
-				setLoading(true);
+				if (append) {
+					setLoadingMore(true);
+				} else {
+					setLoading(true);
+				}
 				const {
 					data: { session: currentSession },
 				} = await supabase.auth.getSession();
@@ -47,7 +52,7 @@ export default function Home() {
 					.from("saves")
 					.select("*")
 					.eq("user_id", currentSession.user.id)
-					.eq("status", "unread")
+					.in("status", ["unread", "active"])
 					.order("time_added", { ascending: false })
 					.range(pageNum * ITEMS_PER_PAGE, (pageNum + 1) * ITEMS_PER_PAGE - 1);
 
@@ -68,7 +73,11 @@ export default function Home() {
 				console.error("Error fetching saves:", error);
 				setError("Failed to load saved items");
 			} finally {
-				setLoading(false);
+				if (append) {
+					setLoadingMore(false);
+				} else {
+					setLoading(false);
+				}
 			}
 		},
 		[router]
@@ -231,15 +240,17 @@ export default function Home() {
 				onArchive={handleArchive}
 				onDelete={handleDelete}
 				loading={loading}
+				loadingMore={loadingMore}
 				hasMore={hasMore}
 				onLoadMore={handleLoadMore}
+				itemsPerPage={ITEMS_PER_PAGE}
 			/>
 
 			<NewBookmarkModal
 				isOpen={newBookmarkModalOpen}
 				onClose={() => setNewBookmarkModalOpen(false)}
 				onSave={handleNewBookmark}
-				loading={loading}
+				isSaving={loading}
 			/>
 
 			<ImportCSVModal

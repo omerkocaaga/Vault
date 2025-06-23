@@ -7,9 +7,14 @@ module.exports = {
 	],
 	theme: {
 		extend: {
+			fontFamily: {
+				sans: ["Haskoy", "var(--font-geist-sans)"],
+				mono: ["var(--font-geist-mono)"],
+				haskoy: ["Haskoy"],
+			},
 			colors: {
-				background: "rgb(var(--background-rgb))",
-				foreground: "rgb(var(--foreground-rgb))",
+				background: "var(--background)",
+				foreground: "var(--foreground)",
 			},
 		},
 	},

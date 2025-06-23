@@ -20,7 +20,7 @@ export default function Layout({ children, onAddNew, onLogout, onImportCSV }) {
 	}
 
 	return (
-		<div className="min-h-screen container mx-auto px-4 sm:px-6 lg:px-12">
+		<div className="min-h-screen container mx-auto px-4 md:px-6 lg:px-8">
 			<Header
 				onLogout={onLogout}
 				onAddNew={onAddNew}

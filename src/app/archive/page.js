@@ -9,10 +9,13 @@ import { useSession } from "@/components/SessionProvider";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import SaveList from "@/components/SaveList";
+import NewBookmarkModal from "@/components/NewBookmarkModal";
+import ImportCSVModal from "@/components/ImportCSVModal";
 
 export default function Archive() {
 	const [saves, setSaves] = useState([]);
 	const [loading, setLoading] = useState(true);
+	const [loadingMore, setLoadingMore] = useState(false);
 	const [error, setError] = useState(null);
 	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 	const [itemToDelete, setItemToDelete] = useState(null);
@@ -20,6 +23,8 @@ export default function Archive() {
 	const [unarchivingId, setUnarchivingId] = useState(null);
 	const [page, setPage] = useState(0);
 	const [hasMore, setHasMore] = useState(true);
+	const [newBookmarkModalOpen, setNewBookmarkModalOpen] = useState(false);
+	const [importCSVModalOpen, setImportCSVModalOpen] = useState(false);
 	const ITEMS_PER_PAGE = 10;
 	const router = useRouter();
 	const { session } = useSession();
@@ -27,7 +32,11 @@ export default function Archive() {
 	const fetchSaves = useCallback(
 		async (pageNum = 0, append = false) => {
 			try {
-				setLoading(true);
+				if (append) {
+					setLoadingMore(true);
+				} else {
+					setLoading(true);
+				}
 				const {
 					data: { session: currentSession },
 				} = await supabase.auth.getSession();
@@ -63,7 +72,11 @@ export default function Archive() {
 				console.error("Error fetching saves:", error);
 				setError("Failed to load saves");
 			} finally {
-				setLoading(false);
+				if (append) {
+					setLoadingMore(false);
+				} else {
+					setLoading(false);
+				}
 			}
 		},
 		[router]
@@ -81,8 +94,8 @@ export default function Archive() {
 		}
 	};
 
-	const handleDeleteClick = (id, title) => {
-		setItemToDelete({ id, title });
+	const handleDeleteClick = (save) => {
+		setItemToDelete(save);
 		setDeleteModalOpen(true);
 	};
 
@@ -124,8 +137,46 @@ export default function Archive() {
 		}
 	};
 
+	const handleNewBookmark = useCallback(
+		async (bookmarkData) => {
+			if (!session?.user?.id) {
+				console.error("No session user ID available");
+				return;
+			}
+
+			try {
+				const { error } = await supabase.from("saves").insert([
+					{
+						...bookmarkData,
+						user_id: session.user.id,
+						status: "archived",
+						time_added: Math.floor(Date.now() / 1000),
+						created_at: new Date().toISOString(),
+					},
+				]);
+
+				if (error) throw error;
+
+				await fetchSaves(0, false);
+				setNewBookmarkModalOpen(false);
+			} catch (error) {
+				console.error("Error saving bookmark:", error);
+				setError("Failed to save bookmark");
+			}
+		},
+		[session, fetchSaves]
+	);
+
+	const handleImportComplete = useCallback(() => {
+		fetchSaves(0, false);
+	}, [fetchSaves]);
+
 	return (
-		<Layout onLogout={handleLogout}>
+		<Layout
+			onAddNew={() => setNewBookmarkModalOpen(true)}
+			onLogout={handleLogout}
+			onImportCSV={() => setImportCSVModalOpen(true)}
+		>
 			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 				<div className="space-y-6">
 					{error && (
@@ -139,9 +190,11 @@ export default function Archive() {
 						onArchive={handleUnarchive}
 						onDelete={handleDeleteClick}
 						loading={loading}
+						loadingMore={loadingMore}
 						hasMore={hasMore}
 						onLoadMore={handleLoadMore}
 						archiveButtonText="Unarchive"
+						itemsPerPage={ITEMS_PER_PAGE}
 					/>
 
 					<DeleteConfirmationModal
@@ -153,6 +206,20 @@ export default function Archive() {
 						onConfirm={handleDeleteConfirm}
 						title="Delete Archived Item"
 						message="Are you sure you want to delete this archived item? This action cannot be undone."
+						isDeleting={!!deletingId}
+					/>
+
+					<NewBookmarkModal
+						isOpen={newBookmarkModalOpen}
+						onClose={() => setNewBookmarkModalOpen(false)}
+						onSave={handleNewBookmark}
+						isSaving={loading}
+					/>
+
+					<ImportCSVModal
+						isOpen={importCSVModalOpen}
+						onClose={() => setImportCSVModalOpen(false)}
+						onImportComplete={handleImportComplete}
 					/>
 				</div>
 			</div>

@@ -249,6 +249,7 @@ export default function CollectionsPage() {
 									saves={saves}
 									loading={loading}
 									onRemove={(save) => handleRemoveFromCollection(save.id)}
+									itemsPerPage={10}
 								/>
 							</div>
 						) : (

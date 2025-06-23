@@ -1,11 +1,26 @@
+import React, { useEffect } from "react";
+
 export default function Modal({ isOpen, onClose, title, children }) {
 	if (!isOpen) return null;
+
+	useEffect(() => {
+		function handleEscapeKey(event) {
+			if (event.key === "Escape") {
+				onClose();
+			}
+		}
+
+		document.addEventListener("keydown", handleEscapeKey);
+		return () => {
+			document.removeEventListener("keydown", handleEscapeKey);
+		};
+	}, [onClose]);
 
 	return (
 		<div className="fixed inset-0 z-50 overflow-y-auto">
 			<div className="flex min-h-screen items-center justify-center p-4 text-center">
 				<div
-					className="fixed inset-0 bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 transition-opacity"
+					className="fixed inset-0 bg-gray-200 bg-opacity-50 dark:bg-gray-800 dark:bg-opacity-50 transition-opacity duration-300 ease-in-out backdrop-blur-sm"
 					onClick={onClose}
 				/>
 

@@ -1,4 +1,5 @@
 import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 import { SessionProvider } from "@/components/SessionProvider";
 
@@ -9,10 +10,17 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
 	return (
-		<html lang="en" className={GeistSans.className}>
+		<html
+			lang="en"
+			style={{
+				"--font-geist-sans": GeistSans.style.fontFamily,
+				"--font-geist-mono": GeistMono.style.fontFamily,
+			}}
+			className="bg-white dark:bg-gray-950"
+		>
 			<body>
 				<SessionProvider>
-					<main className="min-h-screen">{children}</main>
+					<main className="">{children}</main>
 				</SessionProvider>
 			</body>
 		</html>

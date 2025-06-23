@@ -22,7 +22,7 @@
 
 	--tracking-widest: 0.25em;
 
-	--font-sans: var(--font-geist);
+	--font-sans: var(--font-geist-sans);
 	--font-mono: var(--font-geist-mono);
 
 	--aspect-4\/3: 4 / 3;
@@ -41,7 +41,7 @@
 		--alpha: 255 255 255;
 
 		--primary: #f36c31;
-		--primary-light: #f47c48;
+		--primary-light: #f7ceba;
 
 		--layout-mw: 1536px;
 
@@ -77,11 +77,11 @@
 	}
 
 	body {
-		color: var(--foreground);
-		background: var(--background);
-		max-width: var(--layout-mw);
-		margin: 0 auto;
-		font-feature-settings: "dlig", "tnum", "cv03", "cv04", "cv10", "cpsp";
+		/* color: var(--foreground);
+		background: var(--background); */
+		/* max-width: var(--layout-mw);
+		margin: 0 auto; */
+		/* font-feature-settings: "dlig", "tnum", "cv03", "cv04", "cv10", "cpsp"; */
 	}
 
 	svg {
@@ -102,8 +102,20 @@
 		background-color: var(--elevation);
 	}
 
+	.bg-background {
+		background-color: var(--background);
+	}
+
+	.border-focus {
+		border-color: var(--focus);
+	}
+
 	.text-primary {
 		color: var(--primary);
+	}
+
+	.text-focus {
+		color: var(--focus);
 	}
 
 	.text-foreground {
@@ -166,4 +178,26 @@
 	-webkit-line-clamp: 2;
 	-webkit-box-orient: vertical;
 	overflow: hidden;
+}
+
+/* React Masonry CSS */
+.my-masonry-grid {
+	display: flex;
+	margin-left: -32px; /* gutter size offset */
+	width: auto;
+}
+
+.my-masonry-grid_column {
+	padding-left: 32px; /* gutter size */
+	background-clip: padding-box;
+}
+
+/* Optional: different gutter size on mobile */
+@media (max-width: 800px) {
+	.my-masonry-grid {
+		margin-left: -16px; /* gutter size offset */
+	}
+	.my-masonry-grid_column {
+		padding-left: 16px; /* gutter size */
+	}
 }
