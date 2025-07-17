@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import Layout from "@/components/Layout";
 import { User, Lock, LogOut, ArrowLeft } from "@geist-ui/icons";
 import Link from "next/link";
+import NewBookmarkModal from "@/components/NewBookmarkModal";
 
 export default function Profile() {
 	const { session } = useSession();
@@ -14,6 +15,73 @@ export default function Profile() {
 	const [loading, setLoading] = useState(false);
 	const [message, setMessage] = useState("");
 	const [error, setError] = useState("");
+	const [newBookmarkModalOpen, setNewBookmarkModalOpen] = useState(false);
+
+	function extractDomain(url) {
+		try {
+			const urlObj = new URL(url);
+			return urlObj.hostname;
+		} catch (error) {
+			console.error("Error extracting domain:", error);
+			return null;
+		}
+	}
+
+	const handleNewBookmark = async (formData) => {
+		if (!session?.user?.id) {
+			console.log("No session user ID available for saving bookmark");
+			setError("You must be logged in to save bookmarks");
+			return;
+		}
+
+		try {
+			setError(null);
+			const { url, title, description, tags, og_image_url, favicon_url } =
+				formData;
+
+			// Create the new save object with all fields explicitly set
+			const saveData = {
+				user_id: session.user.id,
+				url,
+				title: title || "",
+				description: description || "",
+				tags: tags || [],
+				status: "unread",
+				time_added: Math.floor(Date.now() / 1000),
+				domain: extractDomain(url),
+				og_image_url: og_image_url || "",
+				favicon_url: favicon_url || "",
+				created_at: new Date().toISOString(),
+			};
+
+			// Remove any undefined or null values
+			Object.keys(saveData).forEach((key) => {
+				if (saveData[key] === undefined || saveData[key] === null) {
+					delete saveData[key];
+				}
+			});
+
+			// Close the modal immediately
+			setNewBookmarkModalOpen(false);
+
+			// Save to database
+			const { data, error } = await supabase
+				.from("saves")
+				.insert([saveData])
+				.select();
+
+			if (error) {
+				console.error("Error saving to database:", error);
+				throw error;
+			}
+
+			// Show success message
+			setMessage("Bookmark saved successfully!");
+		} catch (error) {
+			console.error("Error saving bookmark:", error);
+			setError("Failed to save bookmark");
+		}
+	};
 
 	const handlePasswordReset = async () => {
 		if (!session?.user?.email) {
@@ -64,12 +132,15 @@ export default function Profile() {
 	}
 
 	return (
-		<Layout>
+		<Layout
+			onAddNew={() => setNewBookmarkModalOpen(true)}
+			onLogout={handleLogout}
+		>
 			<div className="max-w-2xl mx-auto px-4 py-8">
 				{/* Header */}
 				<div className="flex items-center gap-4 mb-8">
 					<Link
-						href="/"
+						href="/app"
 						className="p-2 rounded-full bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
 					>
 						<ArrowLeft size={20} strokeWidth={2.2} />
@@ -167,6 +238,13 @@ export default function Profile() {
 					</div>
 				)}
 			</div>
+
+			<NewBookmarkModal
+				isOpen={newBookmarkModalOpen}
+				onClose={() => setNewBookmarkModalOpen(false)}
+				onSave={handleNewBookmark}
+				isSaving={loading}
+			/>
 		</Layout>
 	);
 }

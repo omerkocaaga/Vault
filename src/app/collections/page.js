@@ -5,19 +5,94 @@ import { useSession } from "@/components/SessionProvider";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Layout from "@/components/Layout";
-import SaveList from "@/components/SaveList";
 import CollectionModal from "@/components/CollectionModal";
+import NewBookmarkModal from "@/components/NewBookmarkModal";
 
 export default function CollectionsPage() {
 	const { session, loading: sessionLoading } = useSession();
 	const router = useRouter();
 	const [collections, setCollections] = useState([]);
-	const [selectedCollection, setSelectedCollection] = useState(null);
-	const [saves, setSaves] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [editingCollection, setEditingCollection] = useState(null);
+	const [newBookmarkModalOpen, setNewBookmarkModalOpen] = useState(false);
+
+	function extractDomain(url) {
+		try {
+			const urlObj = new URL(url);
+			return urlObj.hostname;
+		} catch (error) {
+			console.error("Error extracting domain:", error);
+			return null;
+		}
+	}
+
+	const handleNewBookmark = async (formData) => {
+		if (!session?.user?.id) {
+			console.log("No session user ID available for saving bookmark");
+			setError("You must be logged in to save bookmarks");
+			return;
+		}
+
+		try {
+			setError(null);
+			const { url, title, description, tags, og_image_url, favicon_url } =
+				formData;
+
+			// Create the new save object with all fields explicitly set
+			const saveData = {
+				user_id: session.user.id,
+				url,
+				title: title || "",
+				description: description || "",
+				tags: tags || [],
+				status: "unread",
+				time_added: Math.floor(Date.now() / 1000),
+				domain: extractDomain(url),
+				og_image_url: og_image_url || "",
+				favicon_url: favicon_url || "",
+				created_at: new Date().toISOString(),
+			};
+
+			// Remove any undefined or null values
+			Object.keys(saveData).forEach((key) => {
+				if (saveData[key] === undefined || saveData[key] === null) {
+					delete saveData[key];
+				}
+			});
+
+			// Close the modal immediately
+			setNewBookmarkModalOpen(false);
+
+			// Save to database
+			const { data, error } = await supabase
+				.from("saves")
+				.insert([saveData])
+				.select();
+
+			if (error) {
+				console.error("Error saving to database:", error);
+				throw error;
+			}
+
+			// Show success message
+			setError("Bookmark saved successfully!");
+		} catch (error) {
+			console.error("Error saving bookmark:", error);
+			setError("Failed to save bookmark");
+		}
+	};
+
+	const handleLogout = async () => {
+		try {
+			await supabase.auth.signOut();
+			router.push("/login");
+		} catch (error) {
+			console.error("Error logging out:", error);
+			setError("Failed to log out");
+		}
+	};
 
 	useEffect(() => {
 		if (session?.user?.id && !sessionLoading) {
@@ -45,84 +120,8 @@ export default function CollectionsPage() {
 		}
 	};
 
-	const fetchCollectionItems = async (collectionId) => {
-		try {
-			setLoading(true);
-			const { data, error } = await supabase
-				.from("collection_items")
-				.select(
-					`
-          save_id,
-          saves (
-            id,
-            url,
-            title,
-            description,
-            og_image_url,
-            favicon_url,
-            time_added,
-            tags,
-            domain
-          )
-        `
-				)
-				.eq("collection_id", collectionId)
-				.order("created_at", { ascending: false });
-
-			if (error) throw error;
-			setSaves(data.map((item) => item.saves));
-		} catch (error) {
-			console.error("Error fetching collection items:", error);
-			setError("Failed to load collection items");
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	const handleCollectionSelect = (collection) => {
-		setSelectedCollection(collection);
-		fetchCollectionItems(collection.id);
-	};
-
-	const handleRemoveFromCollection = async (saveId) => {
-		if (!selectedCollection) return;
-
-		try {
-			const { error } = await supabase
-				.from("collection_items")
-				.delete()
-				.eq("collection_id", selectedCollection.id)
-				.eq("save_id", saveId);
-
-			if (error) throw error;
-
-			// Update local state
-			setSaves(saves.filter((save) => save.id !== saveId));
-		} catch (error) {
-			console.error("Error removing item from collection:", error);
-			setError("Failed to remove item from collection");
-		}
-	};
-
-	const handleAddToCollection = async (saveId) => {
-		if (!selectedCollection) return;
-
-		try {
-			const { error } = await supabase.from("collection_items").insert([
-				{
-					collection_id: selectedCollection.id,
-					save_id: saveId,
-				},
-			]);
-
-			if (error) throw error;
-
-			// Refresh collection items
-			fetchCollectionItems(selectedCollection.id);
-		} catch (error) {
-			console.error("Error adding item to collection:", error);
-			setError("Failed to add item to collection");
-		}
+	const handleCollectionClick = (collection) => {
+		router.push(`/collections/${collection.slug}`);
 	};
 
 	const handleEditCollection = (collection) => {
@@ -143,10 +142,6 @@ export default function CollectionsPage() {
 
 			// Update local state
 			setCollections(collections.filter((c) => c.id !== collectionId));
-			if (selectedCollection?.id === collectionId) {
-				setSelectedCollection(null);
-				setSaves([]);
-			}
 		} catch (error) {
 			console.error("Error deleting collection:", error);
 			setError("Failed to delete collection");
@@ -154,7 +149,10 @@ export default function CollectionsPage() {
 	};
 
 	return (
-		<Layout>
+		<Layout
+			onAddNew={() => setNewBookmarkModalOpen(true)}
+			onLogout={handleLogout}
+		>
 			<div className="container mx-auto px-4 py-8">
 				<div className="flex justify-between items-center mb-8">
 					<h1 className="text-3xl font-bold">Collections</h1>
@@ -175,92 +173,78 @@ export default function CollectionsPage() {
 					</div>
 				)}
 
-				<div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-					{/* Collections Sidebar */}
-					<div className="md:col-span-1">
-						<div className="bg-white rounded-lg shadow p-4">
-							<h2 className="text-xl font-semibold mb-4">Your Collections</h2>
-							{loading && !collections.length ? (
-								<p>Loading collections...</p>
-							) : (
-								<ul className="space-y-2">
-									{collections.map((collection) => (
-										<li
-											key={collection.id}
-											className={`p-2 rounded cursor-pointer hover:bg-gray-100 ${
-												selectedCollection?.id === collection.id
-													? "bg-gray-100"
-													: ""
-											}`}
+				{loading ? (
+					<div className="text-center py-8">
+						<p>Loading collections...</p>
+					</div>
+				) : collections.length === 0 ? (
+					<div className="bg-white rounded-lg shadow p-8 text-center">
+						<p className="text-gray-600 mb-4">No collections yet</p>
+						<p className="text-sm text-gray-500">
+							Create your first collection to start organizing your bookmarks
+						</p>
+					</div>
+				) : (
+					<div className="grid gap-4">
+						{collections.map((collection) => (
+							<div
+								key={collection.id}
+								className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow cursor-pointer"
+								onClick={() => handleCollectionClick(collection)}
+							>
+								<div className="flex justify-between items-start">
+									<div className="flex-1">
+										<h3 className="text-xl font-semibold text-gray-900 mb-2">
+											{collection.name}
+										</h3>
+										{collection.description && (
+											<p className="text-gray-600 mb-3">
+												{collection.description}
+											</p>
+										)}
+										<div className="flex items-center text-sm text-gray-500">
+											<span>
+												Created{" "}
+												{new Date(collection.created_at).toLocaleDateString()}
+											</span>
+											{collection.updated_at !== collection.created_at && (
+												<>
+													<span className="mx-2">•</span>
+													<span>
+														Updated{" "}
+														{new Date(
+															collection.updated_at
+														).toLocaleDateString()}
+													</span>
+												</>
+											)}
+										</div>
+									</div>
+									<div className="flex space-x-2 ml-4">
+										<button
+											onClick={(e) => {
+												e.stopPropagation();
+												handleEditCollection(collection);
+											}}
+											className="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
 										>
-											<div
-												className="flex justify-between items-start"
-												onClick={() => handleCollectionSelect(collection)}
-											>
-												<div>
-													<h3 className="font-medium">{collection.name}</h3>
-													{collection.description && (
-														<p className="text-sm text-gray-600">
-															{collection.description}
-														</p>
-													)}
-												</div>
-												<div className="flex space-x-2">
-													<button
-														onClick={(e) => {
-															e.stopPropagation();
-															handleEditCollection(collection);
-														}}
-														className="text-gray-500 hover:text-gray-700"
-													>
-														Edit
-													</button>
-													<button
-														onClick={(e) => {
-															e.stopPropagation();
-															handleDeleteCollection(collection.id);
-														}}
-														className="text-red-500 hover:text-red-700"
-													>
-														Delete
-													</button>
-												</div>
-											</div>
-										</li>
-									))}
-								</ul>
-							)}
-						</div>
-					</div>
-
-					{/* Collection Items */}
-					<div className="md:col-span-3">
-						{selectedCollection ? (
-							<div>
-								<h2 className="text-2xl font-semibold mb-4">
-									{selectedCollection.name}
-								</h2>
-								{selectedCollection.description && (
-									<p className="text-gray-600 mb-6">
-										{selectedCollection.description}
-									</p>
-								)}
-								<SaveList
-									saves={saves}
-									loading={loading}
-									onRemove={(save) => handleRemoveFromCollection(save.id)}
-									itemsPerPage={10}
-								/>
+											Edit
+										</button>
+										<button
+											onClick={(e) => {
+												e.stopPropagation();
+												handleDeleteCollection(collection.id);
+											}}
+											className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+										>
+											Delete
+										</button>
+									</div>
+								</div>
 							</div>
-						) : (
-							<div className="bg-white rounded-lg shadow p-8 text-center">
-								<p className="text-gray-600">
-									Select a collection to view its items
-								</p>
-							</div>
-						)}
+						))}
 					</div>
-				</div>
+				)}
 
 				<CollectionModal
 					isOpen={isModalOpen}
@@ -270,6 +254,13 @@ export default function CollectionsPage() {
 					}}
 					onSuccess={fetchCollections}
 					collection={editingCollection}
+				/>
+
+				<NewBookmarkModal
+					isOpen={newBookmarkModalOpen}
+					onClose={() => setNewBookmarkModalOpen(false)}
+					onSave={handleNewBookmark}
+					isSaving={loading}
 				/>
 			</div>
 		</Layout>

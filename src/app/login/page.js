@@ -29,7 +29,7 @@ export default function Login() {
 			if (redirectTo && redirectTo !== "/") {
 				router.replace(redirectTo);
 			} else {
-				router.replace("/");
+				router.replace("/app");
 			}
 		}
 	}, [session, sessionLoading, router, searchParams]);
@@ -53,7 +53,7 @@ export default function Login() {
 				if (redirectTo && redirectTo !== "/") {
 					router.replace(redirectTo);
 				} else {
-					router.replace("/");
+					router.replace("/app");
 				}
 			}
 		} catch (error) {

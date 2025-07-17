@@ -53,21 +53,19 @@
 		--font-weight-bold: 700;
 	}
 
-	@media (prefers-color-scheme: dark) {
-		:root {
-			--foreground: #fcfcfc;
-			--background: #211e1c;
-			--elevation: #2f2e2d;
+	.dark {
+		--foreground: #fcfcfc;
+		--background: #211e1c;
+		--elevation: #2f2e2d;
 
-			--focus: #a9a4a2;
-			--pure-white: #fff;
-			--pure-black: #000;
-			--invert: 255 255 255;
-			--alpha: 0 0 0;
+		--focus: #a9a4a2;
+		--pure-white: #fff;
+		--pure-black: #000;
+		--invert: 255 255 255;
+		--alpha: 0 0 0;
 
-			--primary: #f36c31;
-			--primary-light: #f47c48;
-		}
+		--primary: #f36c31;
+		--primary-light: #f47c48;
 	}
 
 	html {

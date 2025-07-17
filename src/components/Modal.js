@@ -20,7 +20,7 @@ export default function Modal({ isOpen, onClose, title, children }) {
 		<div className="fixed inset-0 z-50 overflow-y-auto">
 			<div className="flex min-h-screen items-center justify-center p-4 text-center">
 				<div
-					className="fixed inset-0 bg-gray-200 bg-opacity-50 dark:bg-gray-800 dark:bg-opacity-50 transition-opacity duration-300 ease-in-out backdrop-blur-sm"
+					className="fixed inset-0 bg-gray-200 bg-opacity-50 dark:bg-gray-800 dark:bg-opacity-50 transition-opacity duration-300 ease-in-out backdrop-blur-md"
 					onClick={onClose}
 				/>
 

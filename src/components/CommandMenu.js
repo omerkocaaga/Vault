@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Command } from "cmdk";
-import { Search, Tag, Folder } from "@geist-ui/icons";
+import { Search, Tag, Folder, X } from "@geist-ui/icons";
 import Modal from "./Modal";
 import Image from "next/image";
 
@@ -137,6 +137,24 @@ export default function CommandMenu({ isOpen, onClose }) {
 				if (error) throw error;
 				const newSaves = data || [];
 
+				// Fetch matching collections if there's a search term
+				let matchingCollections = [];
+				if (search) {
+					// Get current collections state for filtering
+					const currentCollections = collections;
+					matchingCollections = currentCollections
+						.filter((col) =>
+							col.name.toLowerCase().includes(search.toLowerCase())
+						)
+						.map((col) => ({
+							...col,
+							type: "collection",
+						}));
+				}
+
+				// Combine saves and collections
+				const combinedResults = [...newSaves, ...matchingCollections];
+
 				if (append) {
 					setSaves((prev) => {
 						// Create a Map to track existing saves by ID for efficient lookup
@@ -152,7 +170,7 @@ export default function CommandMenu({ isOpen, onClose }) {
 						return [...prev, ...uniqueNewSaves];
 					});
 				} else {
-					setSaves(newSaves);
+					setSaves(combinedResults);
 				}
 				setHasMore(newSaves.length === ITEMS_PER_PAGE);
 				setPage(pageNum);
@@ -339,7 +357,7 @@ export default function CommandMenu({ isOpen, onClose }) {
 		if (item.type === "save") {
 			window.open(item.url, "_blank");
 		} else if (item.type === "collection") {
-			router.push(`/collections/${item.id}`);
+			router.push(`/collections/${item.slug}`);
 		} else if (item.type === "tag") {
 			router.push(`/tags/${item.name}`);
 		}
@@ -347,11 +365,15 @@ export default function CommandMenu({ isOpen, onClose }) {
 	};
 
 	// Filtered tags/collections for modal search
-	const filteredTags = tags.filter((tag) =>
-		tag.toLowerCase().includes(tagSearch.toLowerCase())
+	const filteredTags = tags.filter(
+		(tag) =>
+			tag.toLowerCase().includes(tagSearch.toLowerCase()) &&
+			!selectedTags.includes(tag)
 	);
-	const filteredCollections = collections.filter((col) =>
-		col.name.toLowerCase().includes(collectionSearch.toLowerCase())
+	const filteredCollections = collections.filter(
+		(col) =>
+			col.name.toLowerCase().includes(collectionSearch.toLowerCase()) &&
+			!selectedCollections.some((c) => c.id === col.id)
 	);
 
 	function extractDomain(url) {
@@ -375,10 +397,10 @@ export default function CommandMenu({ isOpen, onClose }) {
 		<div className="fixed inset-0 z-50 overflow-y-auto">
 			<div className="flex min-h-screen items-center justify-center p-4">
 				<div
-					className="fixed inset-0 bg-gray-200 bg-opacity-50 dark:bg-gray-800 dark:bg-opacity-50 transition-opacity duration-300 ease-in-out backdrop-blur-sm"
+					className="fixed inset-0 bg-gray-200 bg-opacity-50 dark:bg-gray-800 dark:bg-opacity-50 transition-opacity duration-300 ease-in-out backdrop-blur-md"
 					onClick={onClose}
 				/>
-				<Command className="relative rounded-2xl border border-gray-200 dark:border-gray-700 rounded-2xl bg-gray-50/90 backdrop-blur-md dark:bg-gray-950/80 shadow-xl">
+				<Command className="relative rounded-2xl border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-950 shadow-xl">
 					<div className="flex items-center px-3">
 						<span className="text-gray-700 dark:text-gray-300">
 							<Search size={24} strokeWidth={2.2} />
@@ -386,7 +408,7 @@ export default function CommandMenu({ isOpen, onClose }) {
 						<input
 							value={search}
 							onChange={(e) => setSearch(e.target.value)}
-							className="flex-1 bg-transparent px-2.5 py-5 outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-600"
+							className="flex-1 bg-transparent px-2.5 py-5 outline-none focus:outline-none focus:ring-0 placeholder:text-gray-400 dark:placeholder:text-gray-500 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-600"
 							placeholder="Search in your saves..."
 						/>
 					</div>
@@ -399,7 +421,7 @@ export default function CommandMenu({ isOpen, onClose }) {
 								setTagPopoverOpen((v) => !v);
 								setCollectionPopoverOpen(false);
 							}}
-							className={`px-3.5 py-1 rounded-full border text-sm flex items-center gap-1 max-w-sm ${
+							className={`px-4 py-1.5 rounded-full border text-sm flex items-center gap-1 max-w-sm ${
 								selectedTags.length
 									? "bg-gray-200/80 text-gray-500 dark:bg-gray-800/80 dark:text-gray-500 dark:border-gray-500"
 									: "bg-transparent text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-500"
@@ -424,7 +446,7 @@ export default function CommandMenu({ isOpen, onClose }) {
 								setCollectionPopoverOpen((v) => !v);
 								setTagPopoverOpen(false);
 							}}
-							className={`px-3.5 py-1 rounded-full border text-sm flex items-center gap-1 max-w-sm ${
+							className={`px-4 py-1.5 rounded-full border text-sm flex items-center gap-1 max-w-sm ${
 								selectedCollections.length
 									? "bg-gray-200/80 text-gray-500 dark:bg-gray-800/80 dark:text-gray-500 dark:border-gray-500"
 									: "bg-transparent text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-500"
@@ -448,67 +470,76 @@ export default function CommandMenu({ isOpen, onClose }) {
 						{tagPopoverOpen && (
 							<div
 								id="tag-popover"
-								className="absolute left-0 top-12 z-50 w-72 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4"
+								className="absolute top-12 z-50 w-96 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg flex flex-col gap-2"
+								style={{
+									left: tagBtnRef.current ? tagBtnRef.current.offsetLeft : 0,
+								}}
 							>
-								<div className="flex items-center mb-2 justify-between">
+								<div className="flex items-center mb-2 justify-between border-b border-gray-200 dark:border-gray-700 px-3.5">
 									<input
 										value={tagSearch}
 										onChange={(e) => setTagSearch(e.target.value)}
-										className="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 mr-2"
+										className="w-full py-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 mr-2"
 										placeholder="Search tags"
 									/>
 									<button
-										className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white ml-2 font-mono"
+										className="font-semibold text-gray-500 hover:text-gray-900 dark:hover:text-white ml-2"
 										onClick={() => setTagPopoverOpen(false)}
 									>
 										Done
 									</button>
 								</div>
 								{/* Selected tags as pills */}
-								<div className="flex flex-wrap gap-1 mb-2">
+								<div className="flex flex-wrap gap-2 px-2.5">
 									{selectedTags.map((tag) => (
 										<span
 											key={tag}
-											className="px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-700 text-xs text-gray-700 dark:text-gray-200 flex items-center"
+											className="pl-3.5 pr-2.5 py-1.5 rounded-full border border-gray-400 dark:border-gray-600 bg-gray-200 dark:bg-gray-800 text-xs text-gray-700 dark:text-gray-200 flex items-center"
 										>
 											{tag}
 											<button
-												className="ml-1 text-gray-500 hover:text-red-500"
+												className="ml-1 text-gray-800 dark:text-gray-200"
 												onClick={() =>
 													setSelectedTags(selectedTags.filter((t) => t !== tag))
 												}
 												aria-label={`Remove tag ${tag}`}
 											>
-												×
+												<X size={12} strokeWidth={2.2} />
 											</button>
 										</span>
 									))}
 								</div>
-								<div className="max-h-60 overflow-y-auto">
-									{filteredTags.map((tag) => (
-										<div
-											key={tag}
-											className="flex items-center justify-between px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer"
-											onClick={() => {
-												setSelectedTags(
-													selectedTags.includes(tag)
-														? selectedTags.filter((t) => t !== tag)
-														: [...selectedTags, tag]
-												);
-											}}
-										>
-											<span
-												className={`text-sm ${
-													selectedTags.includes(tag) ? "font-bold" : ""
-												}`}
+								<div className="h-60 overflow-y-auto">
+									{filteredTags.length > 0 ? (
+										filteredTags.map((tag) => (
+											<div
+												key={tag}
+												className="flex items-center justify-between px-3.5 py-2 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer"
+												onClick={() => {
+													setSelectedTags(
+														selectedTags.includes(tag)
+															? selectedTags.filter((t) => t !== tag)
+															: [...selectedTags, tag]
+													);
+												}}
 											>
-												{tag}
-											</span>
-											<span className="text-xs text-gray-400">
-												{tagCounts[tag]}
-											</span>
+												<span
+													className={`text-sm ${
+														selectedTags.includes(tag) ? "font-bold" : ""
+													}`}
+												>
+													{tag}
+												</span>
+												<span className="text-xs text-gray-400">
+													{tagCounts[tag]}
+												</span>
+											</div>
+										))
+									) : (
+										<div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400 text-sm">
+											No tags found
 										</div>
-									))}
+									)}
 								</div>
 							</div>
 						)}
@@ -517,7 +548,12 @@ export default function CommandMenu({ isOpen, onClose }) {
 						{collectionPopoverOpen && (
 							<div
 								id="collection-popover"
-								className="absolute left-32 top-12 z-50 w-72 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4"
+								className="absolute top-12 z-50 w-72 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-2xl p-4"
+								style={{
+									left: collectionBtnRef.current
+										? collectionBtnRef.current.offsetLeft
+										: 0,
+								}}
 							>
 								<div className="flex items-center mb-2 justify-between">
 									<input
@@ -527,7 +563,7 @@ export default function CommandMenu({ isOpen, onClose }) {
 										placeholder="Search collections"
 									/>
 									<button
-										className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white ml-2 font-mono"
+										className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white ml-2"
 										onClick={() => setCollectionPopoverOpen(false)}
 									>
 										Done
@@ -550,7 +586,7 @@ export default function CommandMenu({ isOpen, onClose }) {
 												}
 												aria-label={`Remove collection ${col.name}`}
 											>
-												×
+												<X size={12} />
 											</button>
 										</span>
 									))}
@@ -559,7 +595,7 @@ export default function CommandMenu({ isOpen, onClose }) {
 									{filteredCollections.map((col) => (
 										<div
 											key={col.id}
-											className="flex items-center justify-between px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer"
+											className="flex items-center justify-between px-2 py-1 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer"
 											onClick={() => {
 												setSelectedCollections(
 													selectedCollections.some((c) => c.id === col.id)
@@ -587,51 +623,80 @@ export default function CommandMenu({ isOpen, onClose }) {
 						)}
 					</div>
 
-					<Command.List className="h-[50vh] w-[50vw] overflow-auto p-2">
+					<Command.List className="h-[90vh] lg:h-[50vh] w-[90vw] lg:w-[50vw] overflow-auto p-2">
 						{loading && page === 0 ? (
 							<div className="flex items-center justify-center py-4">
 								<div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900 dark:border-gray-100"></div>
 							</div>
 						) : saves.length > 0 ? (
-							saves.map((save, idx) => (
+							saves.map((item, idx) => (
 								<Command.Item
-									key={save.id}
+									key={item.id}
 									ref={idx === saves.length - 1 ? lastItemRef : null}
-									onSelect={() => handleSelect({ type: "save", ...save })}
+									onSelect={() =>
+										handleSelect(
+											item.type === "collection"
+												? { type: "collection", ...item }
+												: { type: "save", ...item }
+										)
+									}
 									className="flex items-center gap-3 px-2 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
 								>
-									{/* Thumbnail: og:image or favicon */}
-									{save.og_image_url ? (
-										<div className="w-10 h-10 flex-shrink-0 rounded bg-gray-100 dark:bg-gray-700 overflow-hidden">
-											<Image
-												src={save.og_image_url}
-												alt={save.title || "thumbnail"}
-												width={40}
-												height={40}
-												className="object-cover w-10 h-10"
-											/>
-										</div>
-									) : save.favicon_url ? (
-										<div className="w-10 h-10 flex-shrink-0 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
-											<Image
-												src={save.favicon_url}
-												alt="favicon"
-												width={20}
-												height={20}
-												className="object-contain w-5 h-5"
-											/>
-										</div>
+									{/* Collection item */}
+									{item.type === "collection" ? (
+										<>
+											<div className="w-10 h-10 flex-shrink-0 rounded bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+												<Folder
+													size={20}
+													className="text-blue-600 dark:text-blue-400"
+												/>
+											</div>
+											<div className="flex flex-col min-w-0 flex-1">
+												<span className="text-sm text-gray-900 dark:text-gray-100 truncate font-medium">
+													{item.name}
+												</span>
+												<span className="text-xs text-gray-500 dark:text-gray-400 truncate">
+													Collection • {collectionCounts[item.id] || 0} items
+												</span>
+											</div>
+										</>
 									) : (
-										<div className="w-10 h-10 flex-shrink-0 rounded bg-gray-200 dark:bg-gray-700" />
+										/* Save item */
+										<>
+											{/* Thumbnail: og:image or favicon */}
+											{item.og_image_url ? (
+												<div className="w-10 h-10 flex-shrink-0 rounded bg-gray-100 dark:bg-gray-700 overflow-hidden">
+													<Image
+														src={item.og_image_url}
+														alt={item.title || "thumbnail"}
+														width={40}
+														height={40}
+														className="object-cover w-10 h-10"
+													/>
+												</div>
+											) : item.favicon_url ? (
+												<div className="w-10 h-10 flex-shrink-0 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+													<Image
+														src={item.favicon_url}
+														alt="favicon"
+														width={20}
+														height={20}
+														className="object-contain w-5 h-5"
+													/>
+												</div>
+											) : (
+												<div className="w-10 h-10 flex-shrink-0 rounded bg-gray-200 dark:bg-gray-700" />
+											)}
+											<div className="flex flex-col min-w-0 flex-1">
+												<span className="text-sm text-gray-900 dark:text-gray-100 truncate">
+													{item.title || item.url}
+												</span>
+												<span className="text-xs text-gray-500 dark:text-gray-400 truncate">
+													{extractDomain(item.url)}
+												</span>
+											</div>
+										</>
 									)}
-									<div className="flex flex-col">
-										<span className="text-sm text-gray-900 dark:text-gray-100 truncate">
-											{save.title || save.url}
-										</span>
-										<span className="text-xs text-gray-500 dark:text-gray-400 truncate">
-											{extractDomain(save.url)}
-										</span>
-									</div>
 								</Command.Item>
 							))
 						) : (

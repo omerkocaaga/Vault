@@ -44,16 +44,26 @@ export async function middleware(request) {
 		// Get the current path
 		const path = request.nextUrl.pathname;
 
+		// Define public routes that don't require authentication
+		const publicRoutes = ["/", "/login", "/signup"];
+
 		// If user is signed in and the current path is /login or /signup,
-		// redirect the user to /.
+		// redirect the user to /app.
 		if (session && (path === "/login" || path === "/signup")) {
-			console.log("Middleware: Redirecting logged-in user to home");
-			return NextResponse.redirect(new URL("/", request.url));
+			console.log("Middleware: Redirecting logged-in user to app");
+			return NextResponse.redirect(new URL("/app", request.url));
 		}
 
-		// If user is not signed in and the current path is not /login or /signup,
+		// If user is signed in and the current path is / (landing page),
+		// redirect the user to /app.
+		if (session && path === "/") {
+			console.log("Middleware: Redirecting logged-in user from landing to app");
+			return NextResponse.redirect(new URL("/app", request.url));
+		}
+
+		// If user is not signed in and the current path is not a public route,
 		// redirect the user to /login.
-		if (!session && path !== "/login" && path !== "/signup") {
+		if (!session && !publicRoutes.includes(path)) {
 			console.log("Middleware: Redirecting non-logged-in user to login");
 			const redirectUrl = new URL("/login", request.url);
 			// Only add redirectedFrom if it's a valid path

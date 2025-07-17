@@ -316,7 +316,7 @@ export default function SaveList({
 								setSelectedSave(save);
 								setAddToCollectionModalOpen(true);
 							}}
-							className="duration-300 ease-in-out text-gray-400 dark:text-gray-700 hover:text-gray-600 dark:hover:text-gray-400 p-3 rounded-full bg-gray-50 hover:bg-gray-100"
+							className="duration-300 ease-in-out text-gray-400 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 p-3 rounded-full bg-gray-50 hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-800"
 						>
 							<Folder size={16} strokeWidth={2} />
 						</button>
@@ -324,11 +324,13 @@ export default function SaveList({
 							<button
 								onClick={() => handleArchive(save)}
 								disabled={loadingStates[save.id]}
-								className="duration-300 ease-in-out text-gray-400 dark:text-gray-700 hover:text-gray-600 dark:hover:text-gray-400 p-3 rounded-full bg-gray-50 hover:bg-gray-100"
+								className={`duration-300 ease-in-out p-3 rounded-full bg-gray-50 hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-800 ${
+									loadingStates[save.id]
+										? "text-gray-300 dark:text-gray-300 cursor-not-allowed"
+										: "text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400"
+								}`}
 							>
-								{loadingStates[save.id] ? (
-									<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
-								) : save.status === "archived" ? (
+								{save.status === "archived" ? (
 									<ArrowUp size={16} strokeWidth={2} />
 								) : (
 									<Archive size={16} strokeWidth={2} />
@@ -342,7 +344,11 @@ export default function SaveList({
 									setDeleteModalOpen(true);
 								}}
 								disabled={loadingStates[save.id]}
-								className="duration-300 ease-in-out text-gray-400 dark:text-gray-700 hover:text-red-500 disabled:opacity-50 p-3 rounded-full bg-gray-50"
+								className={`duration-300 ease-in-out p-3 rounded-full bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800 ${
+									loadingStates[save.id]
+										? "text-gray-300 dark:text-gray-300 cursor-not-allowed"
+										: "text-gray-400 dark:text-gray-600 hover:text-red-500"
+								}`}
 							>
 								<Trash size={16} strokeWidth={2} />
 							</button>

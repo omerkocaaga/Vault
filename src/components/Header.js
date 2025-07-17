@@ -12,6 +12,7 @@ import {
 import { useState, useEffect } from "react";
 import CommandMenu from "./CommandMenu";
 import { useSession } from "./SessionProvider";
+import ThemeSwitch from "./ThemeSwitch";
 
 export default function Header({ onLogout, onAddNew, onImportCSV }) {
 	const router = useRouter();
@@ -48,14 +49,14 @@ export default function Header({ onLogout, onAddNew, onImportCSV }) {
 		<>
 			<header className="flex justify-between items-center xl:py-16 lg:py-12 md:py-10 py-8">
 				<div className="flex gap-8 items-center flex-1">
-					<Link href="/" className="flex space-x-4 items-center">
+					<Link href="/app" className="flex space-x-4 items-center">
 						<div className="w-7 h-7 rounded-full bg-primary"></div>
 					</Link>
 					<div className="gap-4 hidden lg:flex">
 						<Link
-							href="/"
+							href="/app"
 							className={`"hover:text-gray-800 dark:hover:text-gray-100  duration-300 ease-in-out" ${
-								pathname === "/"
+								pathname === "/app"
 									? "text-gray-800 dark:text-gray-100"
 									: "text-gray-400 dark:text-gray-600"
 							}`}
@@ -99,7 +100,7 @@ export default function Header({ onLogout, onAddNew, onImportCSV }) {
 							<Search size={20} strokeWidth={2.2} />
 						</span>
 					</button>
-					{pathname === "/" && (
+					{pathname !== "/archive" && (
 						<div
 							onClick={onAddNew}
 							className="cursor-pointer duration-300 ease-in-out p-1 flex items-center gap-2 text-gray-500 dark:text-gray-500 p-3.5 rounded-full bg-gray-100 dark:bg-gray-900 hover:bg-gray-200 dark:hover:bg-gray-800"
@@ -107,19 +108,18 @@ export default function Header({ onLogout, onAddNew, onImportCSV }) {
 							<Plus size={20} strokeWidth={2.2} />
 						</div>
 					)}
-
 					<HeadlessMenu as="div" className="relative">
-						<MenuButton className="cursor-pointer duration-300 ease-in-out p-1 flex items-center gap-2 text-gray-500 dark:text-gray-500 p-3.5 rounded-full bg-gray-100 dark:bg-gray-900 hover:bg-gray-200 dark:hover:bg-gray-800">
+						<MenuButton className="cursor-pointer duration-300 ease-in-out p-1 flex items-center gap-2 text-gray-500 dark:text-gray-500 p-4 rounded-full bg-gray-100 dark:bg-gray-900 hover:bg-gray-200 dark:hover:bg-gray-800">
 							<Menu size={20} strokeWidth={2.2} />
 						</MenuButton>
-						<MenuItems className="absolute flex flex-col gap-3 right-0 z-10 mt-4 w-64 origin-top-right rounded-2xl bg-gray-950/80 backdrop-blur-md dark:bg-gray-100/80 p-4 focus:outline-none">
+						<MenuItems className="absolute flex flex-col gap-4 right-0 z-10 mt-4 w-64 origin-top-right rounded-2xl border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-950 shadow-xl p-4 focus:outline-none">
 							<>
 								<MenuItem>
 									<Link
-										href="/"
+										href="/app"
 										className="items-center gap-2.5 flex lg:hidden"
 									>
-										<span className="text-gray-300 dark:text-gray-700 text-base duration-300 ease-in-out hover:text-gray-500 dark:hover:text-gray-500">
+										<span className="text-gray-900 dark:text-gray-100 text-base duration-300 ease-in-out hover:text-gray-500 dark:hover:text-gray-500">
 											Saves
 										</span>
 									</Link>
@@ -129,21 +129,21 @@ export default function Header({ onLogout, onAddNew, onImportCSV }) {
 										href="/collections"
 										className="items-center gap-2.5 flex lg:hidden"
 									>
-										<span className="text-gray-300 dark:text-gray-700 text-base duration-300 ease-in-out hover:text-gray-500 dark:hover:text-gray-500">
+										<span className="text-gray-900 dark:text-gray-100 text-base duration-300 ease-in-out hover:text-gray-500 dark:hover:text-gray-500">
 											Collections
 										</span>
 									</Link>
 								</MenuItem>
 								<MenuItem>
 									<Link href="/archive" className="flex items-center gap-2.5">
-										<span className="text-gray-300 dark:text-gray-700 text-base duration-300 ease-in-out hover:text-gray-500 dark:hover:text-gray-500">
+										<span className="text-gray-900 dark:text-gray-100 text-base duration-300 ease-in-out hover:text-gray-500 dark:hover:text-gray-500">
 											Archive
 										</span>
 									</Link>
 								</MenuItem>
 								<MenuItem>
 									<Link href="/profile" className="flex items-center gap-2.5">
-										<span className="text-gray-300 dark:text-gray-700 text-base duration-300 ease-in-out hover:text-gray-500 dark:hover:text-gray-500">
+										<span className="text-gray-900 dark:text-gray-100 text-base duration-300 ease-in-out hover:text-gray-500 dark:hover:text-gray-500">
 											Profile
 										</span>
 									</Link>
@@ -154,19 +154,28 @@ export default function Header({ onLogout, onAddNew, onImportCSV }) {
 									onClick={onImportCSV}
 									className="flex items-center gap-2.5"
 								>
-									<span className="text-gray-300 dark:text-gray-700 text-base duration-300 ease-in-out hover:text-gray-500 dark:hover:text-gray-500">
+									<span className="text-gray-900 dark:text-gray-100 text-base duration-300 ease-in-out hover:text-gray-500 dark:hover:text-gray-500">
 										Import CSV
 									</span>
 								</MenuItem>
 								<MenuItem
 									as="button"
 									onClick={onLogout}
-									className="flex items-center gap-2.5 mb-2"
+									className="flex items-center gap-2.5"
 								>
-									<span className="text-gray-300 dark:text-gray-700 text-base duration-300 ease-in-out hover:text-gray-500 dark:hover:text-gray-500">
+									<span className="text-gray-900 dark:text-gray-100 text-base duration-300 ease-in-out hover:text-gray-500 dark:hover:text-gray-500">
 										Logout
 									</span>
 								</MenuItem>
+								<div className="h-px w-full my-1 bg-gray-300 dark:bg-gray-700"></div>
+								<div className="flex items-center gap-2.5">
+									<span className="text-gray-900 dark:text-gray-100 text-base">
+										Theme
+									</span>
+									<div className="ml-auto" onClick={(e) => e.stopPropagation()}>
+										<ThemeSwitch />
+									</div>
+								</div>
 							</>
 						</MenuItems>
 					</HeadlessMenu>

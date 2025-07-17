@@ -4,6 +4,16 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import Modal from "./Modal";
 
+// Function to generate slug from name
+const generateSlug = (name) => {
+	return name
+		.toLowerCase()
+		.replace(/[^a-z0-9\s-]/g, "") // Remove special characters
+		.replace(/\s+/g, "-") // Replace spaces with hyphens
+		.replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
+		.trim("-"); // Remove leading/trailing hyphens
+};
+
 export default function CollectionModal({
 	isOpen,
 	onClose,
@@ -26,9 +36,11 @@ export default function CollectionModal({
 			} = await supabase.auth.getSession();
 			if (!session) throw new Error("Not authenticated");
 
+			const slug = generateSlug(name);
 			const collectionData = {
 				name,
 				description,
+				slug,
 				user_id: session.user.id,
 			};
 
@@ -87,6 +99,11 @@ export default function CollectionModal({
 						className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 						required
 					/>
+					{name && (
+						<p className="text-xs text-gray-500 mt-1">
+							Slug: {generateSlug(name)}
+						</p>
+					)}
 				</div>
 
 				<div className="mb-6">
@@ -109,7 +126,7 @@ export default function CollectionModal({
 					<button
 						type="button"
 						onClick={onClose}
-						className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+						className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
 					>
 						Cancel
 					</button>

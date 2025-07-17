@@ -75,7 +75,7 @@ export default function TestPage() {
 					{session && (
 						<div className="mb-4">
 							<h2 className="text-lg font-semibold mb-2">Session Info:</h2>
-							<pre className="bg-gray-100 p-4 rounded overflow-auto">
+							<pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded overflow-auto">
 								{JSON.stringify(session, null, 2)}
 							</pre>
 						</div>
@@ -85,7 +85,7 @@ export default function TestPage() {
 						<h2 className="text-lg font-semibold mb-2">
 							Environment Variables:
 						</h2>
-						<div className="bg-gray-100 p-4 rounded">
+						<div className="bg-gray-100 dark:bg-gray-800 p-4 rounded">
 							<p>
 								NEXT_PUBLIC_SUPABASE_URL:{" "}
 								{process.env.NEXT_PUBLIC_SUPABASE_URL ? "✅ Set" : "❌ Not Set"}
